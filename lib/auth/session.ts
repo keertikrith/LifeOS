@@ -1,20 +1,24 @@
 import { redirect } from "next/navigation";
 import { userClient } from "@/lib/db/clients";
-import { localDateString } from "@/lib/time/day";
+import { localDateString, zoneWithDayStart } from "@/lib/time/day";
 
 /** Signed-in user + profile for server pages. Redirects to /login if there is no session. */
 export async function requireSession() {
   const db = await userClient();
   const { data } = await db.auth.getUser();
   if (!data.user) redirect("/login");
-  const { data: profile } = await db.from("profiles").select("display_name, timezone, calorie_target").eq("id", data.user.id).single();
-  const tz: string = profile?.timezone ?? "Asia/Kolkata";
+  const { data: profile } = await db.from("profiles").select("display_name, timezone, calorie_target, day_start_hour").eq("id", data.user.id).single();
+  const rawTz: string = profile?.timezone ?? "Asia/Kolkata";
+  const dayStart: number = profile?.day_start_hour ?? 0;
+  const tz = zoneWithDayStart(rawTz, dayStart);
   const now = new Date();
   return {
     db,
     userId: data.user.id,
     email: data.user.email ?? "",
     tz,
+    rawTz,
+    dayStart,
     now,
     today: localDateString(now, tz),
     displayName: (profile?.display_name as string | null) ?? null,

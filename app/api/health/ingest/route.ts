@@ -1,6 +1,6 @@
 import { adminClient } from "@/lib/db/clients";
 import { parseIngestBody } from "@/lib/health/ingest";
-import { localDateString } from "@/lib/time/day";
+import { localDateString, zoneWithDayStart } from "@/lib/time/day";
 import { tokenFromRequest, verifyApiToken } from "@/lib/health/tokens";
 
 export const maxDuration = 15;
@@ -29,8 +29,8 @@ export async function POST(request: Request) {
 
   // Shortcuts are simpler without date maths: a single-day body with no date means "today in the user's timezone".
   if (body && typeof body === "object" && !Array.isArray(body) && !("days" in body) && !(body as { date?: unknown }).date) {
-    const { data: profile } = await db.from("profiles").select("timezone").eq("id", userId).single();
-    body = { ...(body as object), date: localDateString(new Date(), (profile?.timezone as string) ?? "Asia/Kolkata") };
+    const { data: profile } = await db.from("profiles").select("timezone, day_start_hour").eq("id", userId).single();
+    body = { ...(body as object), date: localDateString(new Date(), zoneWithDayStart((profile?.timezone as string) ?? "Asia/Kolkata", profile?.day_start_hour as number | undefined)) };
   }
 
   const parsed = parseIngestBody(body);

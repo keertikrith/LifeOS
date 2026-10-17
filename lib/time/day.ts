@@ -25,26 +25,43 @@ function offsetMs(date: Date, timeZone: string): number {
   return asUtc - Math.floor(date.getTime() / 1000) * 1000;
 }
 
-/** Local calendar date `YYYY-MM-DD` of `date` in `timeZone`. */
-export function localDateString(date: Date, timeZone: string): string {
-  const p = partsInTz(date, timeZone);
+/**
+ * A "zone" is an IANA timezone, optionally suffixed with the hour the user's day starts: "Asia/Kolkata|4".
+ * With a 4 AM start, 1:30 AM on the 18th still belongs to the 17th. Build one with `zoneWithDayStart`;
+ * a plain timezone means the day starts at midnight.
+ */
+export const zoneWithDayStart = (timeZone: string, startHour: number | null | undefined) => (startHour ? `${timeZone}|${startHour}` : timeZone);
+
+function splitZone(zone: string): { tz: string; startHour: number } {
+  const [tz, h] = zone.split("|");
+  return { tz, startHour: Number(h) || 0 };
+}
+
+const HOUR = 3_600_000;
+
+/** Local calendar date `YYYY-MM-DD` of `date`, in the user's day (see `zoneWithDayStart`). */
+export function localDateString(date: Date, zone: string): string {
+  const { tz: timeZone, startHour } = splitZone(zone);
+  const p = partsInTz(new Date(date.getTime() - startHour * HOUR), timeZone);
   return `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
 }
 
-/** UTC instants bounding the local day that contains `date`: [start, end). */
-export function dayBounds(date: Date, timeZone: string): { start: Date; end: Date } {
-  const p = partsInTz(date, timeZone);
+/** UTC instants bounding the user's day that contains `date`: [start, end). */
+export function dayBounds(date: Date, zone: string): { start: Date; end: Date } {
+  const { tz: timeZone, startHour } = splitZone(zone);
+  const p = partsInTz(new Date(date.getTime() - startHour * HOUR), timeZone);
   const startFor = (y: number, m: number, d: number) => {
     const guess = new Date(Date.UTC(y, m - 1, d));
     return new Date(guess.getTime() - offsetMs(guess, timeZone));
   };
-  const start = startFor(p.year, p.month, p.day);
-  const end = startFor(p.year, p.month, p.day + 1);
+  const start = new Date(startFor(p.year, p.month, p.day).getTime() + startHour * HOUR);
+  const end = new Date(startFor(p.year, p.month, p.day + 1).getTime() + startHour * HOUR);
   return { start, end };
 }
 
-export function localHour(date: Date, timeZone: string): number {
-  return partsInTz(date, timeZone).hour;
+/** Wall-clock hour (0–23) — the real hour, not shifted by the day start. */
+export function localHour(date: Date, zone: string): number {
+  return partsInTz(date, splitZone(zone).tz).hour;
 }
 
 /** Meal slot from local hour. Used only when the user's text doesn't say. */

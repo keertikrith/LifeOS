@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createHash, randomInt } from "node:crypto";
 import type { Food, UserDefault } from "@/lib/nutrition/matcher";
-import { dayBounds } from "@/lib/time/day";
+import { dayBounds, zoneWithDayStart } from "@/lib/time/day";
 
 export type MealType = "breakfast" | "lunch" | "snack" | "dinner";
 
@@ -81,8 +81,10 @@ export async function saveDefault(db: SupabaseClient, userId: string, d: UserDef
 export async function getBotUser(db: SupabaseClient, chatId: number): Promise<BotUser | null> {
   const link = ok(await db.from("telegram_links").select("user_id, chat_id, pending_action").eq("chat_id", chatId).maybeSingle(), "getBotUser");
   if (!link) return null;
-  const profile = ok(await db.from("profiles").select("timezone, calorie_target, display_name").eq("id", link.user_id).single(), "getProfile");
-  return { ...link, ...profile } as BotUser;
+  const profile = ok(await db.from("profiles").select("timezone, calorie_target, display_name, day_start_hour").eq("id", link.user_id).single(), "getProfile");
+  const { day_start_hour, ...rest } = profile as { timezone: string; day_start_hour: number | null };
+  // `timezone` carries the day-start hour too (see zoneWithDayStart), so every day calculation honours it
+  return { ...link, ...profile, ...rest, timezone: zoneWithDayStart(rest.timezone, day_start_hour) } as BotUser;
 }
 
 export async function setPendingAction(db: SupabaseClient, userId: string, action: BotUser["pending_action"]) {

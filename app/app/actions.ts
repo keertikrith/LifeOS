@@ -8,9 +8,8 @@ import { createLinkCode } from "@/lib/db/meals";
 import { ACTIVITY, computeCoachPlan, type Activity, type Sex } from "@/lib/coach/calc";
 import { saveHealthManual } from "@/lib/health/manual";
 import { createApiToken } from "@/lib/health/tokens";
-import { localDateString } from "@/lib/time/day";
 import { env } from "@/lib/env";
-import { isValidTimeZone } from "@/lib/time/day";
+import { isValidTimeZone, localDateString, zoneWithDayStart } from "@/lib/time/day";
 
 async function requireUser() {
   const db = await userClient();
@@ -43,9 +42,10 @@ export async function saveSettings(formData: FormData) {
   const timezone = String(formData.get("timezone") ?? "Asia/Kolkata");
   const targetRaw = String(formData.get("calorie_target") ?? "").trim();
   const target = targetRaw === "" ? null : Number(targetRaw);
-  if (!isValidTimeZone(timezone)) return;
+  const dayStart = Number(formData.get("day_start_hour") ?? 0);
+  if (!isValidTimeZone(timezone) || !Number.isInteger(dayStart) || dayStart < 0 || dayStart > 6) return;
   if (target !== null && (!Number.isInteger(target) || target < 500 || target > 10000)) return;
-  await db.from("profiles").update({ timezone, calorie_target: target }).eq("id", user.id);
+  await db.from("profiles").update({ timezone, calorie_target: target, day_start_hour: dayStart }).eq("id", user.id);
   revalidatePath("/app");
 }
 
@@ -59,8 +59,8 @@ export async function signOut() {
 const validDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s));
 
 async function profileTz(db: Awaited<ReturnType<typeof userClient>>, userId: string) {
-  const { data } = await db.from("profiles").select("timezone").eq("id", userId).single();
-  return (data?.timezone as string) ?? "Asia/Kolkata";
+  const { data } = await db.from("profiles").select("timezone, day_start_hour").eq("id", userId).single();
+  return zoneWithDayStart((data?.timezone as string) ?? "Asia/Kolkata", data?.day_start_hour as number | undefined);
 }
 
 export async function toggleHabit(habitId: string, date: string) {
@@ -167,6 +167,56 @@ export async function saveCoach(_prev: { ok?: boolean; error?: string }, formDat
 
   // the plan's calories become your daily target (shown on Today and in Telegram)
   await db.from("profiles").update({ calorie_target: check.targetKcal }).eq("id", user.id);
+  revalidatePath("/app", "layout");
+  return { ok: true };
+}
+
+// ───────────── edit past meals (web) ─────────────
+export async function deleteMeal(logId: string) {
+  const { db, user } = await requireUser();
+  await db.from("meal_logs").delete().eq("id", logId).eq("user_id", user.id);
+  revalidatePath("/app", "layout");
+}
+
+/** Changes an item's quantity and scales its calories/macros in proportion, then refreshes the meal total. */
+export async function setItemQuantity(itemId: string, quantity: number) {
+  const { db, user } = await requireUser();
+  if (!Number.isFinite(quantity) || quantity <= 0 || quantity > 10000) return;
+  const { data: item } = await db.from("meal_log_items").select("id, log_id, quantity, kcal, protein_g, carbs_g, fat_g").eq("id", itemId).eq("user_id", user.id).single();
+  if (!item) return;
+  const f = quantity / Number(item.quantity);
+  const r1 = (n: number) => Math.round(n * 10) / 10;
+  await db.from("meal_log_items").update({ quantity, kcal: Math.round(Number(item.kcal) * f), protein_g: r1(Number(item.protein_g) * f), carbs_g: r1(Number(item.carbs_g) * f), fat_g: r1(Number(item.fat_g) * f) }).eq("id", itemId).eq("user_id", user.id);
+  await refreshTotal(db, item.log_id as string);
+  revalidatePath("/app", "layout");
+}
+
+export async function removeItem(itemId: string) {
+  const { db, user } = await requireUser();
+  const { data: item } = await db.from("meal_log_items").select("log_id").eq("id", itemId).eq("user_id", user.id).single();
+  if (!item) return;
+  await db.from("meal_log_items").delete().eq("id", itemId).eq("user_id", user.id);
+  const { count } = await db.from("meal_log_items").select("id", { count: "exact", head: true }).eq("log_id", item.log_id as string);
+  if (!count) await db.from("meal_logs").delete().eq("id", item.log_id as string).eq("user_id", user.id);
+  else await refreshTotal(db, item.log_id as string);
+  revalidatePath("/app", "layout");
+}
+
+async function refreshTotal(db: Awaited<ReturnType<typeof userClient>>, logId: string) {
+  const { data } = await db.from("meal_log_items").select("kcal").eq("log_id", logId);
+  const total = Math.round((data ?? []).reduce((s, i) => s + Number(i.kcal), 0));
+  await db.from("meal_logs").update({ total_kcal: total }).eq("id", logId);
+}
+
+// ───────────── reset ─────────────
+/** Deletes everything the user has logged. Keeps the account, Telegram link, habits, food defaults, API tokens and coach profile. */
+export async function resetLogs(_prev: { ok?: boolean; error?: string }, formData: FormData): Promise<{ ok?: boolean; error?: string }> {
+  const { db, user } = await requireUser();
+  if (String(formData.get("confirm") ?? "").trim().toUpperCase() !== "RESET") return { error: "Type RESET to confirm." };
+  for (const table of ["meal_logs", "health_daily", "habit_logs", "journal_entries"]) {
+    const { error } = await db.from(table).delete().eq("user_id", user.id);
+    if (error) return { error: `Couldn't clear ${table}. Nothing else was touched after that point — try again.` };
+  }
   revalidatePath("/app", "layout");
   return { ok: true };
 }

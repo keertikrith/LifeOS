@@ -21,9 +21,9 @@ const SHADES = ["transparent", "color-mix(in srgb, var(--ink) 18%, transparent)"
 export function Heatmap({ days }: { days: { date: string; level: number; kcal: number }[] }) {
   return (
     <div>
-      <div className="grid grid-flow-col grid-rows-7 gap-1" role="img" aria-label="Daily logging heat map">
+      <div className="flex flex-wrap gap-1" role="img" aria-label="Daily logging heat map">
         {days.map((d) => (
-          <span key={d.date} title={`${d.date}: ${d.level ? `${Math.round(d.kcal)} kcal` : "nothing logged"}`} className="aspect-square min-h-3 border border-line" style={{ background: SHADES[d.level] }} />
+          <span key={d.date} title={`${d.date}: ${d.level ? `${Math.round(d.kcal)} kcal` : "nothing logged"}`} className="h-5 w-5 border border-line" style={{ background: SHADES[d.level] }} />
         ))}
       </div>
       <p className="mt-2 flex items-center gap-2 text-xs text-ink-soft">Less {SHADES.map((c, i) => <span key={i} className="inline-block h-3 w-3 border border-line" style={{ background: c }} />)} More</p>

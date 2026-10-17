@@ -1,3 +1,4 @@
+import { DeleteMeal, ItemEditor } from "@/components/meal-controls";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HabitRow } from "@/components/habit-row";
@@ -57,8 +58,9 @@ export default async function DayView({ params }: { params: Promise<{ date: stri
           {meals.length === 0 ? <p className="text-sm text-ink-soft">Nothing logged.</p> : (
             <ul className="space-y-4">{meals.map((l) => (
               <li key={l.id}>
-                <p className="mb-1 flex justify-between text-sm font-semibold"><span>{l.meal_type ? MEAL_LABEL[l.meal_type] : " Meal"}</span><span className="text-saffron-deep">{fmt(l.total_kcal)} kcal</span></p>
-                <ul className="text-sm text-ink-soft">{l.items.map((i) => <li key={i.id}>{Number.isInteger(i.quantity) ? i.quantity : Math.round(i.quantity * 100) / 100} {i.unit} {i.name}{i.match_type === "estimated" && <span className="ml-1.5 text-[11px] font-semibold text-chili">≈ estimated</span>}</li>)}</ul>
+                <p className="mb-1 flex justify-between text-sm font-semibold"><span>{l.meal_type ? MEAL_LABEL[l.meal_type] : " Meal"}</span><span>{fmt(l.total_kcal)} kcal</span></p>
+                <ul className="space-y-1.5 text-sm text-ink-soft">{l.items.map((i) => { const q = Number.isInteger(i.quantity) ? i.quantity : Math.round(i.quantity * 100) / 100; return <li key={i.id}><ItemEditor id={i.id} quantity={q} label={`${q} ${i.unit} ${i.name}${i.match_type === "estimated" ? " ≈ estimated" : ""}`} /></li>; })}</ul>
+                <p className="mt-2"><DeleteMeal id={l.id} /></p>
               </li>
             ))}</ul>
           )}
