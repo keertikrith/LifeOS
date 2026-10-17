@@ -10,7 +10,7 @@ for (const line of readFileSync(".env.local", "utf8").split("\n")) {
 }
 process.env.TELEGRAM_BOT_TOKEN = "test-token";
 process.env.GEMINI_API_KEY = "test";
-vi.mock("@/lib/llm/gemini", () => ({ generateJson: vi.fn(async () => ({})) }));
+vi.mock("@/lib/llm/gemini", async (orig) => ({ ...(await orig<object>()), generateJson: vi.fn(async () => ({})) }));
 
 const sent: { method: string; body: any }[] = [];
 const realFetch = globalThis.fetch;

@@ -14,7 +14,7 @@ process.env.GEMINI_API_KEY = "test";
 
 type Script = (prompt: string) => unknown;
 let script: Script = () => ({});
-vi.mock("@/lib/llm/gemini", () => ({ generateJson: vi.fn(async ({ prompt }: { prompt: string }) => script(prompt)) }));
+vi.mock("@/lib/llm/gemini", async (orig) => ({ ...(await orig<object>()), generateJson: vi.fn(async ({ prompt }: { prompt: string }) => script(prompt)) }));
 
 const sent: { method: string; body: any }[] = [];
 const realFetch = globalThis.fetch;
