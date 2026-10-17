@@ -5,6 +5,7 @@ import {
   type BotUser, type LogItem, type MealLog, type NewItem,
 } from "@/lib/db/meals";
 import { env } from "@/lib/env";
+import { LlmRateLimitError } from "@/lib/llm/gemini";
 import { parseMealText } from "@/lib/llm/parser";
 import { estimatedItem, itemFromResolution, matchedItem, variantLabel } from "@/lib/nutrition/build";
 import { candidatesFor, resolveItem, type Food } from "@/lib/nutrition/matcher";
@@ -89,6 +90,7 @@ async function logMeal(db: SupabaseClient, user: BotUser, text: string) {
     parsed = await parseMealText(text, [...new Set(catalog.filter((f) => f.source !== "ifct2017").map((f) => f.food_key))]);
   } catch (e) {
     console.error("parse failed", e);
+    if (e instanceof LlmRateLimitError) return void (await sendMessage(user.chat_id, "I'm a little busy right now 🙏 Please send that again in a minute."));
     return void (await sendMessage(user.chat_id, "Sorry, I couldn't read that one. Could you rephrase it? e.g. <i>“2 idli and a filter coffee”</i>"));
   }
   if (!parsed.is_food_log || !parsed.items.length) {
