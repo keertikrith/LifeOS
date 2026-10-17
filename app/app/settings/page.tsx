@@ -1,6 +1,7 @@
 import { LinkTelegram } from "@/components/link-telegram";
 import { requireSession } from "@/lib/auth/session";
 import { env } from "@/lib/env";
+import { ConnectAI } from "@/components/connect-ai";
 import { ResetForm } from "@/components/reset-form";
 import { saveSettings } from "../actions";
 
@@ -13,12 +14,17 @@ export default async function Settings() {
   const { db, userId, rawTz, dayStart, target, email } = await requireSession();
   const { data: prefs } = await db.from("profiles").select("nudges_enabled, wake_hour, sleep_hour, monthly_out_budget, monthly_drink_budget").eq("id", userId).single();
   const link = await db.from("telegram_links").select("chat_id").eq("user_id", userId).maybeSingle();
+  const { data: mcpLinks } = await db.from("api_tokens").select("id, created_at, last_used_at, revoked_at").eq("user_id", userId).eq("kind", "mcp").order("created_at", { ascending: false });
   return (
     <div className="space-y-4">
       <h1 className="font-display text-3xl font-extrabold">Settings</h1>
       <section className="card rise p-6" aria-labelledby="tg-h">
         <h2 id="tg-h" className="mb-3 font-display text-lg font-bold">Telegram</h2>
         <LinkTelegram linked={!!link.data} botUsername={env.telegramBotUsername()} />
+      </section>
+      <section className="card rise p-6" aria-labelledby="ai-h">
+        <h2 id="ai-h" className="mb-3 font-display text-lg font-bold">Claude / ChatGPT</h2>
+        <ConnectAI links={mcpLinks ?? []} />
       </section>
       <section className="card rise p-6" aria-labelledby="set-h">
         <h2 id="set-h" className="mb-1 font-display text-lg font-bold">Preferences</h2>

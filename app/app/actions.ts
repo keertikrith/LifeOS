@@ -12,6 +12,7 @@ import { addEvent } from "@/lib/db/social";
 import { logSession, type LiftInput } from "@/lib/db/workouts";
 import { DEFAULT_ALLOWANCE, type EventKind } from "@/lib/social/budget";
 import { parseLift } from "@/lib/workouts/stats";
+import { headers } from "next/headers";
 import { env } from "@/lib/env";
 import { isValidTimeZone, localDateString, zoneWithDayStart } from "@/lib/time/day";
 
@@ -275,4 +276,22 @@ export async function deleteSocialEvent(id: string) {
   const { db, user } = await requireUser();
   await db.from("social_events").delete().eq("id", id).eq("user_id", user.id);
   revalidatePath("/app", "layout");
+}
+
+// ───────────── chat-app connector (MCP) ─────────────
+export async function createConnectLink(): Promise<{ url?: string; error?: string }> {
+  const { user } = await requireUser();
+  const res = await createApiToken(adminClient(), user.id, "Chat app", "mcp");
+  if (!("token" in res)) return { error: res.error };
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const proto = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
+  revalidatePath("/app/settings");
+  return { url: `${host ? `${proto}://${host}` : env.siteUrl()}/api/mcp/${res.token}` };
+}
+
+export async function revokeConnectLink(id: string) {
+  const { db, user } = await requireUser();
+  await db.from("api_tokens").update({ revoked_at: new Date().toISOString() }).eq("id", id).eq("user_id", user.id).eq("kind", "mcp");
+  revalidatePath("/app/settings");
 }

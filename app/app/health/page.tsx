@@ -13,7 +13,7 @@ export default async function HealthPage() {
   const { db, userId, today } = await requireSession();
   const dates = lastNDates(today, 7);
   const [{ data: tokens }, rows] = await Promise.all([
-    db.from("api_tokens").select("id, name, token_prefix, created_at, last_used_at, revoked_at").eq("user_id", userId).order("created_at", { ascending: false }),
+    db.from("api_tokens").select("id, name, token_prefix, created_at, last_used_at, revoked_at").eq("user_id", userId).eq("kind", "ingest").order("created_at", { ascending: false }),
     healthRange(db, userId, dates[0], today),
   ]);
   const endpoint = `${env.siteUrl().replace(/\/$/, "")}/api/health/ingest`;
