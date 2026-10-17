@@ -32,8 +32,16 @@ npm run webhook -- https://<your-tunnel-url>
 ```
 Then: sign in on the site → **Get my link code** → open the bot and send `/start CODE`.
 
-### Google sign-in (optional)
-Magic-link email works out of the box. For Google: create an OAuth client in Google Cloud, add its ID/secret under `[auth.external.google]` in `supabase/config.toml` (local) or in the Supabase dashboard (cloud).
+### Sign-in
+Email + password (the email is the username). Google/social sign-in is deliberately not built yet.
+
+## Production (live)
+- **App:** Vercel project `life-os` (functions in `hnd1`/Tokyo, next to the database).
+- **Database/Auth:** Supabase project `vvkwwgbzpalblakuuoxu` (ap-northeast-1). Email confirmation is OFF until an SMTP provider is configured — switch it on in Auth settings before opening sign-up to the public.
+- **Secrets** live only in Vercel env vars and your local `.env.local` — never in git. Production needs: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`, `NEXT_PUBLIC_SITE_URL`, `AUTO_CONFIRM_MINUTES`.
+- **Deploy:** `npx vercel deploy --prod`. **Telegram webhook:** `node --env-file=.env.local scripts/set-webhook.mjs https://<site-url>`.
+- **Schema changes:** add a migration under `supabase/migrations/`, then apply it to the hosted project (Supabase dashboard SQL editor, or `supabase db push` once linked).
+- **Food data:** 169 curated dishes (`curated_estimate`) + 528 IFCT 2017 raw ingredients (`ifct2017`, per 100 g; matched only when you give grams).
 
 ## Scripts
 `npm test` unit tests · `npm run test:int` end-to-end bot flow against local Supabase (Gemini/Telegram stubbed) · `npm run seed:gen` rebuild `supabase/seed.sql` from `supabase/seed/foods.data.ts` · `npm run typecheck` · `npm run lint`

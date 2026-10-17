@@ -32,7 +32,9 @@ export default async function Dashboard() {
 
   const eaten = Math.round(logs.reduce((s, l) => s + Number(l.total_kcal), 0));
   const todayRow = week[week.length - 1];
-  const bal = dailyBalance({ eaten, activeKcal: todayRow.activeKcal, restingKcal: todayRow.restingKcal });
+  // no meals logged = an untracked day, not a zero-calorie day: don't compute a balance from it
+  const hasFood = logs.length > 0;
+  const bal = hasFood ? dailyBalance({ eaten, activeKcal: todayRow.activeKcal, restingKcal: todayRow.restingKcal }) : ({ kind: "no_burn_data", eaten } as const);
   const avg = averageBalance(week);
   const diff = target ? target - eaten : null;
   const seed = Number(today.replaceAll("-", ""));
@@ -61,7 +63,7 @@ export default async function Dashboard() {
             <div className="rounded-2xl bg-bg-soft p-3"><dt className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">Balance</dt><dd className={`font-display text-xl font-bold tabular-nums ${bal.kind === "balance" ? (bal.label === "deficit" ? "text-leaf" : "text-saffron-deep") : "text-ink-soft"}`}>{bal.kind === "balance" ? `${bal.balance > 0 ? "+" : ""}${fmt(bal.balance)}` : "—"}</dd></div>
           </dl>
           <p className="mt-3 text-center text-sm text-ink-soft">
-            {bal.kind === "balance" ? <>Today so far: <b>{describeBalance(bal.balance)}</b></> : <><b>No burn data</b> for today yet — it arrives when your Apple Health sync runs.</>}
+            {bal.kind === "balance" ? <>Today so far: <b>{describeBalance(bal.balance)}</b></> : hasFood ? <><b>No burn data</b> for today yet — it arrives when your Apple Health sync runs.</> : <>Log a meal to see today&apos;s balance.</>}
             {diff !== null && <><br />Target {fmt(target!)} · {diff >= 0 ? <b className="text-leaf">{fmt(diff)} kcal remaining</b> : <b className="text-maroon">{fmt(-diff)} kcal above</b>}</>}
           </p>
         </section>

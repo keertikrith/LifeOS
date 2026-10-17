@@ -29,7 +29,7 @@ export default async function DayView({ params }: { params: Promise<{ date: stri
     getJournal(db, userId, date),
   ]);
   const eaten = Math.round(meals.reduce((s, l) => s + Number(l.total_kcal), 0));
-  const bal = dailyBalance({ eaten, activeKcal: health?.active_kcal ?? null, restingKcal: health?.resting_kcal ?? null });
+  const bal = meals.length > 0 ? dailyBalance({ eaten, activeKcal: health?.active_kcal ?? null, restingKcal: health?.resting_kcal ?? null }) : ({ kind: "no_burn_data", eaten } as const);
   const due = habits.filter((h) => h.scheduled);
   const next = shift(date, 1);
 
@@ -48,7 +48,7 @@ export default async function DayView({ params }: { params: Promise<{ date: stri
         <div className="rounded-2xl bg-bg-soft p-3"><p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">Eaten</p><p className="font-display text-2xl font-bold tabular-nums">{fmt(eaten)}</p></div>
         <div className="rounded-2xl bg-bg-soft p-3"><p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">Burned</p><p className="font-display text-2xl font-bold tabular-nums">{bal.kind === "balance" ? fmt(bal.burned) : "—"}</p></div>
         <div className="rounded-2xl bg-bg-soft p-3"><p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">Balance</p><p className="font-display text-2xl font-bold tabular-nums">{bal.kind === "balance" ? `${bal.balance > 0 ? "+" : ""}${fmt(bal.balance)}` : "—"}</p></div>
-        <p className="col-span-3 text-sm text-ink-soft">{bal.kind === "balance" ? describeBalance(bal.balance) : "No burn data for this day"}</p>
+        <p className="col-span-3 text-sm text-ink-soft">{bal.kind === "balance" ? describeBalance(bal.balance) : meals.length === 0 ? "Nothing logged this day, so no balance" : "No burn data for this day"}</p>
       </section>
 
       <div className="grid gap-4 md:grid-cols-2">
