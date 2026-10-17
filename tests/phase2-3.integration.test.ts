@@ -211,3 +211,14 @@ describe("health numbers by Telegram command", () => {
     expect(lastSent().text).toContain("Send it like");
   });
 });
+
+describe("ingest without a date (simple Shortcut)", () => {
+  it("defaults to today in the user's timezone and accepts Shortcut-style strings", async () => {
+    await db.from("api_tokens").update({ revoked_at: null }).eq("id", tokenId);
+    await db.from("health_daily").delete().eq("user_id", userId).eq("date", today);
+    const res = await ingest({ steps: "9,001", active_kcal: "333.4", resting_kcal: "" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, updated: [today] });
+    expect(await row()).toMatchObject({ steps: 9001, active_kcal: 333.4, resting_kcal: null });
+  });
+});

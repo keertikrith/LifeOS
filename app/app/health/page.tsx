@@ -18,7 +18,6 @@ export default async function HealthPage() {
   ]);
   const endpoint = `${env.siteUrl().replace(/\/$/, "")}/api/health/ingest`;
   const sample = `{
-  "date": "2026-10-16",
   "active_kcal": 512,
   "resting_kcal": 1640,
   "steps": 8421,
@@ -50,25 +49,25 @@ export default async function HealthPage() {
       </section>
 
       <section className="rounded-2xl border border-line p-5" aria-labelledby="how-h">
-        <h2 id="how-h" className="mb-1 font-display text-lg font-bold">2 · Build the iPhone Shortcut</h2>
-        <p className="mb-4 text-sm text-ink-soft">Takes about 10 minutes, once. Menu names can differ slightly between iOS versions.</p>
+        <h2 id="how-h" className="mb-1 font-display text-lg font-bold">2 · Build the iPhone Shortcut (5 minutes)</h2>
+        <p className="mb-4 text-sm text-ink-soft">Sends <b>today&apos;s</b> steps, active and resting calories. No dates to set. Menu names can differ slightly between iOS versions.</p>
         <ol className="list-decimal space-y-4 pl-5 text-sm leading-relaxed marker:font-bold marker:text-saffron-deep">
-          <li><b>Create the shortcut.</b> Open <i>Shortcuts</i> → <b>+</b> → name it <b>Life OS Sync</b>.</li>
-          <li><b>Pick the day to send (yesterday).</b> Add <i>Current Date</i> → <i>Adjust Date</i> (Operation: <b>Get Start of Day</b>) → rename its output <b>TodayStart</b>. Add another <i>Adjust Date</i> on that: <b>Subtract 1 Day</b> → rename <b>YesterdayStart</b>. Add <i>Format Date</i> on YesterdayStart: Date Format <b>Custom</b>, format string <code className="rounded bg-bg-soft px-1.5 py-0.5">yyyy-MM-dd</code> → rename <b>DayText</b>.</li>
-          <li><b>Active calories.</b> Add <i>Find Health Samples</i>: Type <b>Active Energy</b>, filters <b>Start Date is after YesterdayStart</b> and <b>Start Date is before TodayStart</b>, turn <b>Limit off</b>. Then <i>Calculate Statistics</i> → <b>Sum</b> → rename <b>ActiveSum</b>.</li>
-          <li><b>Resting calories.</b> Repeat step 3 with Type <b>Resting Energy</b> → <b>RestingSum</b>.</li>
-          <li><b>Steps.</b> Repeat with Type <b>Steps</b> → <b>StepsSum</b>.</li>
-          <li><b>Weight (optional).</b> <i>Find Health Samples</i>: Type <b>Weight</b>, Sort by <b>Start Date, Latest First</b>, Limit <b>1</b> → <i>Get Details of Health Samples</i> → <b>Value</b> (in kg) → rename <b>WeightKg</b>. If you didn&apos;t weigh yourself, leave this out.</li>
-          <li><b>Sleep (optional).</b> <i>Find Health Samples</i>: Type <b>Sleep Analysis</b>, <b>Start Date is after YesterdayStart</b>, <b>before TodayStart</b>, Value is <b>Asleep</b> (not In Bed) → <i>Get Details</i> → <b>Duration</b> → <i>Calculate Statistics</i> Sum → convert seconds to minutes with <i>Calculate</i> (÷ 60) → rename <b>SleepMinutes</b>. If it feels fiddly, skip sleep for now.</li>
-          <li><b>Send it.</b> Add <i>Get Contents of URL</i>. URL: <code className="break-all rounded bg-bg-soft px-1.5 py-0.5">{endpoint}</code>. Tap <b>Show More</b>: Method <b>POST</b>. Headers: <code className="rounded bg-bg-soft px-1.5 py-0.5">Authorization</code> = <code className="rounded bg-bg-soft px-1.5 py-0.5">Bearer YOUR_TOKEN</code>. Request Body <b>JSON</b>, then add fields: <code>date</code> (Text) = DayText, <code>active_kcal</code> = ActiveSum, <code>resting_kcal</code> = RestingSum, <code>steps</code> = StepsSum, and optionally <code>weight_kg</code> = WeightKg and <code>sleep_minutes</code> = SleepMinutes.</li>
-          <li><b>Check the reply.</b> Add <i>Show Notification</i> with the <i>Contents of URL</i>. You should see <code className="rounded bg-bg-soft px-1.5 py-0.5">{`{"ok":true,...}`}</code>. Allow Health access when iOS asks. Run it once by tapping ▶️.</li>
-          <li><b>Automate it.</b> <i>Automation</i> tab → <b>+</b> → <b>Alarm</b> → <b>Is Stopped</b> (your morning alarm) → <i>Run Shortcut: Life OS Sync</i> → set <b>Run Immediately</b>. <br /><span className="text-ink-soft">Why the morning alarm: iOS can&apos;t read Health data while the phone is locked, and your phone is unlocked right after you stop the alarm. A fixed-time automation at night often fails for that reason. (A time-of-day automation works too if your phone is usually unlocked then.)</span></li>
+          <li><b>Create it.</b> Open the <i>Shortcuts</i> app → tap <b>+</b> (top right) → tap the name at the top → <b>Rename</b> → <b>Send Health to Life OS</b>.</li>
+          <li><b>Steps.</b> Tap <b>Add Action</b>, search <i>Find Health Samples</i>, add it. Tap <b>Add Filter</b> → <b>Type</b> → <b>Steps</b>. Add a second filter: <b>Start Date</b> → <b>is Today</b>. Turn <b>Limit</b> off.</li>
+          <li>Add the action <i>Calculate Statistics</i> → set it to <b>Sum</b>. Then add <i>Set Variable</i> and name the variable <b>Steps</b>.</li>
+          <li><b>Active calories.</b> Repeat steps 2–3, but choose Type <b>Active Energy</b> and name the variable <b>Active</b>.</li>
+          <li><b>Resting calories.</b> Repeat again with Type <b>Resting Energy</b> and name the variable <b>Resting</b>.</li>
+          <li><b>Send.</b> Add <i>Get Contents of URL</i>. In the URL box paste <code className="break-all rounded bg-bg-soft px-1.5 py-0.5">{endpoint}</code>. Tap the small arrow to <b>Show More</b> and set <b>Method</b> to <b>POST</b>.</li>
+          <li><b>Header.</b> Under <b>Headers</b> tap <b>Add new header</b>: Key <code className="rounded bg-bg-soft px-1.5 py-0.5">Authorization</code>, Text <code className="rounded bg-bg-soft px-1.5 py-0.5">Bearer</code> then a space, then your token from step 1 above.</li>
+          <li><b>Body.</b> Set <b>Request Body</b> to <b>JSON</b>. Tap <b>Add new field</b> three times, choosing type <b>Number</b> each time: key <code>steps</code> → tap the value and pick variable <b>Steps</b>; key <code>active_kcal</code> → <b>Active</b>; key <code>resting_kcal</code> → <b>Resting</b>.</li>
+          <li><b>First run.</b> Tap ▶️. iOS will ask for Health access: tap <b>Allow</b> for all three. Add <i>Show Result</i> at the end if you want to see <code className="rounded bg-bg-soft px-1.5 py-0.5">{`{"ok":true,...}`}</code>. Then check “Recent days” below.</li>
+          <li><b>Make it one tap.</b> Easiest: <i>Settings → Accessibility → Touch → Back Tap → Double Tap</i> → pick <b>Send Health to Life OS</b>. Or in Shortcuts tap the shortcut’s ⓘ → <b>Add to Home Screen</b>. Run it in the evening when your phone is unlocked.<br /><span className="text-ink-soft">Why not a timed automation: iOS can&apos;t read Health data while the phone is locked, so a 10 pm automation often fails silently.</span></li>
         </ol>
 
         <h3 className="mb-2 mt-6 font-semibold">What the endpoint accepts</h3>
         <pre className="overflow-x-auto rounded-2xl bg-bg-soft p-4 text-xs leading-relaxed">{sample}</pre>
         <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-ink-soft">
-          <li><code>date</code> is <b>your local day</b> (YYYY-MM-DD). Every other field is optional — send only what you have.</li>
+          <li><code>date</code> is optional: leave it out and it means <b>today in your timezone</b> (or send YYYY-MM-DD for another day). Every metric is optional — send only what you have.</li>
           <li>A blank value is ignored, never saved as zero. Missing burn data shows as “no burn data”.</li>
           <li>Back-fill up to 31 days in one request: <code>{`{"days":[{...},{...}]}`}</code>.</li>
         </ul>
@@ -76,7 +75,7 @@ export default async function HealthPage() {
         <pre className="overflow-x-auto rounded-2xl bg-bg-soft p-4 text-xs leading-relaxed">{`curl -X POST ${endpoint} \\
   -H "Authorization: Bearer YOUR_TOKEN" \\
   -H "Content-Type: application/json" \\
-  -d '{"date":"${today}","steps":1000}'`}</pre>
+  -d '{"steps":1000}'`}</pre>
       </section>
 
         </div>
