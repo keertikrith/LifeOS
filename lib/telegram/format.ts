@@ -1,5 +1,6 @@
 import type { LogItem, MealLog } from "@/lib/db/meals";
 import type { Balance } from "@/lib/health/balance";
+import { isGramLike } from "@/lib/llm/parser";
 import { escapeHtml, type InlineKeyboard } from "./api";
 
 const MEAL_EMOJI = { breakfast: "🌅 Breakfast", lunch: "🍛 Lunch", snack: "🫖 Snack", dinner: "🌙 Dinner" } as const;
@@ -9,7 +10,7 @@ const kcal = (n: number) => Math.round(n).toLocaleString("en-IN");
 
 export function itemLine(i: LogItem): string {
   const label = escapeHtml(i.variant && !i.name.toLowerCase().includes(i.variant) ? `${i.variant} ${i.name}` : i.name);
-  if (i.match_type === "unresolved") return `• ${label} — ❓ <i>needs your input</i>`;
+  if (i.match_type === "unresolved") return `• ${label} — ❓ <i>${i.clarify?.kind === "quantity" && isGramLike(i.unit) ? "how many grams?" : "needs your input"}</i>`;
   const flag = i.match_type === "estimated" ? " <i>≈ estimated, not from database</i>" : "";
   return `• ${qty(i.quantity)} ${escapeHtml(i.unit)} ${label} — <b>${kcal(i.kcal)}</b> kcal${flag}`;
 }
@@ -31,8 +32,9 @@ export function logKeyboard(log: MealLog): InlineKeyboard {
       const rows = pending.clarify.options.map((o, idx) => [{ text: o.label, callback_data: `v|${log.id}|${pending.position}|${idx}` }]);
       return [...rows, [{ text: "🗑 Delete", callback_data: `del|${log.id}` }]];
     }
+    const grams = isGramLike(pending.unit);
     return [
-      [1, 2, 3, 4].map((n) => ({ text: String(n), callback_data: `q|${log.id}|${pending.position}|${n}` })),
+      (grams ? [50, 100, 150, 200] : [1, 2, 3, 4]).map((n) => ({ text: grams ? `${n} g` : String(n), callback_data: `q|${log.id}|${pending.position}|${n}` })),
       [{ text: "✏️ Other amount", callback_data: `eq|${log.id}|${pending.position}` }, { text: "🗑 Delete", callback_data: `del|${log.id}` }],
     ];
   }
@@ -85,4 +87,5 @@ Just tell me what you ate — in English, हिन्दी, ಕನ್ನಡ or
 /undo — remove the last log
 /habits — tick off today's habits
 /journal — log your mood and a note
-/target 2000 — set your daily kcal target`;
+/target 2000 — set your daily kcal target
+/burn 450 1600 · /steps 8000 · /weight 68.4 · /sleep 7.5 — add today's health numbers`;

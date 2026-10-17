@@ -1,3 +1,4 @@
+import { HealthQuickForm } from "@/components/health-quick-form";
 import { TokenManager } from "@/components/token-manager";
 import { requireSession } from "@/lib/auth/session";
 import { healthRange } from "@/lib/db/life";
@@ -29,15 +30,26 @@ export default async function HealthPage() {
     <div className="space-y-4">
       <div>
         <h1 className="font-display text-3xl font-extrabold">Apple Health sync</h1>
-        <p className="text-sm text-ink-soft">Your iPhone sends yesterday&apos;s totals once a day. Safe to send twice — a day is saved once, never double-counted.</p>
+        <p className="text-sm text-ink-soft">Add your numbers by hand in 20 seconds — or set up automatic sync later. Both feed the same balance and trends.</p>
       </div>
 
-      <section className="card rise p-6" aria-labelledby="tok-h">
+      <section className="card rise p-6" aria-labelledby="quick-h">
+        <h2 id="quick-h" className="mb-1 font-display text-lg font-bold">Quick entry</h2>
+        <p className="mb-4 text-sm text-ink-soft">No setup needed. In Telegram you can also send <code>/burn 450 1600</code>, <code>/steps 8000</code> or <code>/weight 68.4</code>.</p>
+        <HealthQuickForm today={today} />
+      </section>
+
+      <details className="card rise p-6">
+        <summary className="cursor-pointer font-display text-lg font-bold">Automatic sync from iPhone (advanced, optional)</summary>
+        <p className="mb-4 mt-2 text-sm text-ink-soft">Your iPhone can send yesterday&apos;s totals once a day. Safe to send twice — a day is saved once, never double-counted.</p>
+        <div className="space-y-4">
+
+      <section className="rounded-2xl border border-line p-5" aria-labelledby="tok-h">
         <h2 id="tok-h" className="mb-3 font-display text-lg font-bold">1 · Access tokens</h2>
         <TokenManager tokens={tokens ?? []} />
       </section>
 
-      <section className="card rise p-6" aria-labelledby="how-h">
+      <section className="rounded-2xl border border-line p-5" aria-labelledby="how-h">
         <h2 id="how-h" className="mb-1 font-display text-lg font-bold">2 · Build the iPhone Shortcut</h2>
         <p className="mb-4 text-sm text-ink-soft">Takes about 10 minutes, once. Menu names can differ slightly between iOS versions.</p>
         <ol className="list-decimal space-y-4 pl-5 text-sm leading-relaxed marker:font-bold marker:text-saffron-deep">
@@ -66,6 +78,9 @@ export default async function HealthPage() {
   -H "Content-Type: application/json" \\
   -d '{"date":"${today}","steps":1000}'`}</pre>
       </section>
+
+        </div>
+      </details>
 
       <section className="card rise p-6" aria-labelledby="recent-h">
         <h2 id="recent-h" className="mb-3 font-display text-lg font-bold">3 · Recently synced</h2>

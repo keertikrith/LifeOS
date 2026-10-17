@@ -199,4 +199,11 @@ export const FOODS: Row[] = [
   ["papad", "Papad", null, ["appalam", "happala", "ಹಪ್ಪಳ", "అప్పడం", "पापड़", "papadum"], "1 roasted papad", "piece", 10, 40, 2.5, 5.5, 0.5],
   ["pickle", "Pickle", null, ["achaar", "uppinakai", "ಉಪ್ಪಿನಕಾಯಿ", "ఊరగాయ", "अचार", "avakaya"], "1 teaspoon (~10 g)", "tsp", 10, 25, 0.2, 1, 2.2],
   ["coconut_chutney", "Coconut chutney", null, ["chutney", "thengai chutney", "ತೆಂಗಿನಕಾಯಿ ಚಟ್ನಿ", "ಚಟ್ನಿ", "కొబ్బరి చట్నీ", "चटनी"], "2 tablespoons (~30 g)", "serving", 30, 55, 0.8, 3, 4.5],
+
+  // ── packaged / breakfast staples, per 100 g (typical label values; give grams, e.g. "150 g muesli") ──
+  ["muesli", "Muesli", null, ["museli", "mueslli", "muesly", "cereal muesli"], "100 g", "g", 100, 365, 10, 66, 6.5],
+  ["oats", "Rolled oats", null, ["oatmeal", "porridge oats", "quaker oats", "oat", "ओट्स"], "100 g (dry)", "g", 100, 389, 16.9, 66, 6.9],
+  ["cornflakes", "Corn flakes", null, ["corn flakes", "cornflake", "kellogg's corn flakes"], "100 g", "g", 100, 357, 7.5, 84, 0.4],
+  ["granola", "Granola", null, ["granola cereal"], "100 g", "g", 100, 450, 10, 64, 18],
+  ["peanut_butter", "Peanut butter", null, ["pb", "peanutbutter"], "100 g", "g", 100, 588, 25, 20, 50],
 ];

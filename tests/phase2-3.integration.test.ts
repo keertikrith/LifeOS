@@ -192,3 +192,22 @@ describe("/today shows balance", () => {
     expect(lastSent().text).toMatch(/surplus|deficit|even/);
   });
 });
+
+describe("health numbers by Telegram command", () => {
+  it("/burn, /steps, /weight save today's values and merge without erasing each other", async () => {
+    const day = (await db.from("health_daily").select("*").eq("user_id", userId).eq("date", today).maybeSingle()).data;
+    void day;
+    await say("/burn 450 1600");
+    expect(lastSent().text).toContain("Saved for today");
+    await say("/steps 8,000");
+    await say("/weight 68.4");
+    const r = (await db.from("health_daily").select("*").eq("user_id", userId).eq("date", today).single()).data!;
+    expect(r).toMatchObject({ active_kcal: 450, resting_kcal: 1600, steps: 8000, weight_kg: 68.4, source: "telegram" });
+  });
+  it("rejects nonsense with a clear message and saves nothing", async () => {
+    await say("/weight 5");
+    expect(lastSent().text).toContain("Couldn't save");
+    await say("/steps");
+    expect(lastSent().text).toContain("Send it like");
+  });
+});

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { adminClient, userClient } from "@/lib/db/clients";
 import { archiveHabit, createHabit, saveJournal, setHabitDone } from "@/lib/db/life";
 import { createLinkCode } from "@/lib/db/meals";
+import { saveHealthManual } from "@/lib/health/manual";
 import { createApiToken } from "@/lib/health/tokens";
 import { localDateString } from "@/lib/time/day";
 import { env } from "@/lib/env";
@@ -113,4 +114,26 @@ export async function revokeToken(tokenId: string) {
   const { db, user } = await requireUser();
   await db.from("api_tokens").update({ revoked_at: new Date().toISOString() }).eq("id", tokenId).eq("user_id", user.id);
   revalidatePath("/app/health");
+}
+
+// ───────────── manual health entry (no Shortcut needed) ─────────────
+export async function logHealthManual(_prev: { ok?: boolean; error?: string }, formData: FormData): Promise<{ ok?: boolean; error?: string }> {
+  const { db, user } = await requireUser();
+  const today = localDateString(new Date(), await profileTz(db, user.id));
+  const date = String(formData.get("date") || today);
+  if (!validDate(date) || date > today) return { error: "Pick today or an earlier date." };
+  const num = (k: string) => String(formData.get(k) ?? "").trim();
+  const sleepH = num("sleep_hours");
+  const metrics = {
+    active_kcal: num("active_kcal"),
+    resting_kcal: num("resting_kcal"),
+    steps: num("steps"),
+    weight_kg: num("weight_kg"),
+    sleep_minutes: sleepH === "" ? "" : String(Math.round(Number(sleepH) * 60)),
+  };
+  if (Object.values(metrics).every((v) => v === "")) return { error: "Enter at least one number." };
+  const res = await saveHealthManual(adminClient(), user.id, date, metrics, "manual");
+  if (!res.ok) return { error: res.error };
+  revalidatePath("/app", "layout");
+  return { ok: true };
 }

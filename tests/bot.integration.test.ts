@@ -138,6 +138,27 @@ describe("Telegram bot flow", () => {
     expect(Number(data!.quantity)).toBe(4);
   });
 
+  it("'150gm museli' logs 150 g from the database even if the model drops the quantity (bug report)", async () => {
+    script = () => parse([item("muesli", { display_name: "museli", quantity: null, unit: "bowl" })]);
+    await say("I ate 150gm museli");
+    const msg = lastSent();
+    expect(msg.text).toContain("Muesli");
+    expect(msg.text).toContain("150 g");
+    expect(msg.text).toContain("548"); // 365 kcal/100 g x 1.5
+    expect(msg.text).not.toContain("needs your input");
+    expect(buttons(msg).some((x: string) => x.startsWith("ok|"))).toBe(true);
+  });
+
+  it("when grams really are unknown, asks in grams (50/100/150/200), never 1-4", async () => {
+    script = () => parse([item("muesli", { display_name: "museli", quantity: null, unit: "g" })]);
+    await say("some museli, tell me in grams");
+    const kb = lastSent().reply_markup.inline_keyboard.flat();
+    expect(kb.filter((b: any) => b.callback_data.startsWith("q|")).map((b: any) => b.text)).toEqual(["50 g", "100 g", "150 g", "200 g"]);
+    expect(lastSent().text).toContain("how many grams");
+    await tap(kb.find((b: any) => b.text === "100 g").callback_data);
+    expect(lastEdit().text).toContain("365");
+  });
+
   it("/undo removes the most recent log", async () => {
     const before = await db.from("meal_logs").select("id").eq("user_id", userId);
     await say("/undo");

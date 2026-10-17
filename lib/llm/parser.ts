@@ -38,18 +38,55 @@ export function validateParsedMeal(raw: unknown): ParsedMeal {
   };
 }
 
+const GRAM_LIKE = new Set(["g", "gm", "gms", "gram", "grams", "gramme", "grammes", "kg", "kgs", "ml", "l", "litre", "litres"]);
+export const isGramLike = (unit: string) => GRAM_LIKE.has(unit.trim().toLowerCase());
+
+/** "150gm", "150 g", "0.5 kg", "200ml" -> {value, unit}. Reads the user's own digits, never the model's. */
+export function typedAmounts(text: string): { value: number; unit: "g" | "ml" }[] {
+  const out: { value: number; unit: "g" | "ml" }[] = [];
+  for (const m of text.matchAll(/(\d+(?:[.,]\d+)?)\s*(kgs?|gms?|grams?|g|ml|litres?|l)\b/gi)) {
+    const n = Number(m[1].replace(",", "."));
+    const u = m[2].toLowerCase();
+    if (u === "kg" || u === "kgs") out.push({ value: n * 1000, unit: "g" });
+    else if (u === "l" || u.startsWith("litre")) out.push({ value: n * 1000, unit: "ml" });
+    else out.push({ value: n, unit: u === "ml" ? "ml" : "g" });
+  }
+  return out;
+}
+
 /**
- * LLMs occasionally mangle numbers ("150 g" -> 15). If the user typed digits and a parsed quantity (>= 2) matches none
- * of them, the quantity is dropped so the bot asks instead of silently logging a wrong amount.
- * Words ("ek", "a", "half") never contain ASCII digits, so those messages are left alone.
+ * Models sometimes mangle numbers ("150 g" -> 15, or null for "150gm"), so:
+ * 1) amounts typed with a weight/volume unit are read straight from the text and applied to the matching items;
+ * 2) any other parsed quantity >= 2 that matches none of the typed digits is dropped, so the bot asks instead of guessing.
+ * Words ("ek", "a", "half") contain no ASCII digits, so those messages are left alone.
  */
 export function sanitizeQuantities(text: string, parsed: ParsedMeal): ParsedMeal {
-  const typed = (text.match(/\d+(?:[.,]\d+)?/g) ?? []).map((t) => Number(t.replace(",", ".")));
-  if (!typed.length) return parsed;
-  return {
-    ...parsed,
-    items: parsed.items.map((i) => (i.quantity !== null && i.quantity >= 2 && !typed.some((n) => Math.abs(n - i.quantity!) < 0.01) ? { ...i, quantity: null } : i)),
+  const amounts = typedAmounts(text);
+  const used = new Set<number>();
+  const takeAmount = (q: number | null) => {
+    // prefer the amount the model already got right, otherwise the next unused one in order
+    let idx = q === null ? -1 : amounts.findIndex((a, i) => !used.has(i) && Math.abs(a.value - q) < 0.01);
+    if (idx < 0) idx = amounts.findIndex((_, i) => !used.has(i));
+    if (idx >= 0) used.add(idx);
+    return idx >= 0 ? amounts[idx] : null;
   };
+
+  let items = parsed.items.map((i) => {
+    const gramLike = isGramLike(i.unit);
+    const lone = parsed.items.length === 1 && amounts.length === 1;
+    const matchesTyped = i.quantity !== null && amounts.some((a) => Math.abs(a.value - i.quantity!) < 0.01);
+    if (gramLike || lone || matchesTyped) {
+      const a = takeAmount(i.quantity);
+      if (a && (gramLike || lone || matchesTyped)) return { ...i, quantity: a.value, unit: a.unit };
+    }
+    return i;
+  });
+
+  const typed = (text.match(/\d+(?:[.,]\d+)?/g) ?? []).map((t) => Number(t.replace(",", ".")));
+  if (typed.length) {
+    items = items.map((i) => (i.quantity !== null && i.quantity >= 2 && !typed.some((n) => Math.abs(n - i.quantity!) < 0.01) ? { ...i, quantity: null } : i));
+  }
+  return { ...parsed, items };
 }
 
 const SYSTEM = `You extract structured food logs from messages written by an Indian user.

@@ -6,7 +6,7 @@ import {
 } from "@/lib/db/meals";
 import { env } from "@/lib/env";
 import { LlmRateLimitError } from "@/lib/llm/gemini";
-import { parseMealText } from "@/lib/llm/parser";
+import { isGramLike, parseMealText } from "@/lib/llm/parser";
 import { estimatedItem, itemFromResolution, matchedItem, variantLabel } from "@/lib/nutrition/build";
 import { candidatesFor, resolveItem, type Food } from "@/lib/nutrition/matcher";
 import { mealTypeForHour, localHour } from "@/lib/time/day";
@@ -15,6 +15,7 @@ import { HELP, itemPicker, logKeyboard, logMessage, todayMessage } from "./forma
 import { moodCallback, saveJournalReply, showHabits, startJournal, toggleHabitCallback } from "./life";
 import { healthRange } from "@/lib/db/life";
 import { dailyBalance } from "@/lib/health/balance";
+import { saveHealthManual } from "@/lib/health/manual";
 import { localDateString } from "@/lib/time/day";
 
 export interface TgUpdate {
@@ -57,6 +58,7 @@ async function handleText(db: SupabaseClient, chatId: number, text: string, repl
   if (cmd === "/today") return today(db, user);
   if (cmd === "/undo") return undo(db, user);
   if (cmd === "/target") return setTarget(db, user, rest[0]);
+  if (cmd === "/steps" || cmd === "/weight" || cmd === "/burn" || cmd === "/sleep") return healthCommand(db, user, cmd, rest);
   if (cmd === "/habits") return showHabits(db, user);
   if (cmd === "/journal" || cmd === "/note") return startJournal(db, user, rest.join(" "));
   if (cmd) return void (await sendMessage(chatId, HELP));
@@ -66,21 +68,23 @@ async function handleText(db: SupabaseClient, chatId: number, text: string, repl
 
   // awaiting a typed quantity from ✏️?
   if (user.pending_action?.type === "edit_qty") {
-    const q = parseQuantity(text);
-    if (q != null) return applyTypedQuantity(db, user, user.pending_action, q);
+    const pa = user.pending_action;
+    const target = (await getLog(db, user.user_id, pa.log_id))?.items.find((i) => i.position === pa.position);
+    const q = parseQuantity(text, !!target && isGramLike(target.unit));
+    if (q != null) return applyTypedQuantity(db, user, pa, q);
     await setPendingAction(db, user.user_id, null); // not a number: treat as a fresh meal message
   }
   return logMeal(db, user, text);
 }
 
-export function parseQuantity(text: string): number | null {
+export function parseQuantity(text: string, grams = false): number | null {
   const t = text.trim().toLowerCase();
   if (/^(half|aadha|aadhaa|आधा|ಅರ್ಧ|సగం)$/.test(t)) return 0.5;
   const frac = t.match(/^(\d+)\s*\/\s*(\d+)$/);
   if (frac && Number(frac[2]) > 0) return Number(frac[1]) / Number(frac[2]);
   const n = t.match(/^(\d+(?:\.\d+)?)\b/);
   const v = n ? Number(n[1]) : null;
-  return v && v > 0 && v <= 100 ? v : null;
+  return v && v > 0 && v <= (grams ? 5000 : 100) ? v : null;
 }
 
 async function logMeal(db: SupabaseClient, user: BotUser, text: string) {
@@ -129,6 +133,23 @@ async function undo(db: SupabaseClient, user: BotUser) {
   await deleteLog(db, user.user_id, log.id);
   if (log.telegram_message_id) await editMessage(user.chat_id, log.telegram_message_id, "🗑 <i>Removed.</i>");
   await sendMessage(user.chat_id, `Removed your last log (${Math.round(log.total_kcal)} kcal): ${log.items.map((i) => escapeHtml(i.name)).join(", ")}.`);
+}
+
+/** /steps 8000 · /weight 68.4 · /burn 450 1600 (active, resting) · /sleep 7.5 — saved for today, same validation as the API. */
+async function healthCommand(db: SupabaseClient, user: BotUser, cmd: string, args: string[]) {
+  const nums = args.map((a) => a.replace(/,/g, ""));
+  let metrics: Record<string, unknown> | null = null;
+  let what = "";
+  if (cmd === "/steps" && nums[0]) { metrics = { steps: nums[0] }; what = `${Number(nums[0]).toLocaleString("en-IN")} steps`; }
+  if (cmd === "/weight" && nums[0]) { metrics = { weight_kg: nums[0] }; what = `${nums[0]} kg`; }
+  if (cmd === "/sleep" && nums[0]) { metrics = { sleep_minutes: String(Math.round(Number(nums[0]) * 60)) }; what = `${nums[0]} h sleep`; }
+  if (cmd === "/burn" && nums[0]) { metrics = { active_kcal: nums[0], ...(nums[1] ? { resting_kcal: nums[1] } : {}) }; what = nums[1] ? `${nums[0]} active + ${nums[1]} resting kcal` : `${nums[0]} active kcal`; }
+  if (!metrics) {
+    const usage = { "/steps": "/steps 8000", "/weight": "/weight 68.4", "/sleep": "/sleep 7.5", "/burn": "/burn 450 1600  (active, then resting kcal)" }[cmd];
+    return void (await sendMessage(user.chat_id, `Send it like <code>${usage}</code>.`));
+  }
+  const res = await saveHealthManual(db, user.user_id, localDateString(new Date(), user.timezone), metrics, "telegram");
+  await sendMessage(user.chat_id, res.ok ? `Saved for today: <b>${escapeHtml(what)}</b> ✅` : `Couldn't save that: ${escapeHtml(res.error)}`);
 }
 
 async function setTarget(db: SupabaseClient, user: BotUser, arg?: string) {
@@ -186,7 +207,7 @@ async function handleCallback(db: SupabaseClient, chatId: number, messageId: num
       const item = log.items.find((i) => i.position === (pos < 0 ? 0 : pos))!;
       if (action === "eq") {
         await setPendingAction(db, user.user_id, { type: "edit_qty", log_id: log.id, position: item.position });
-        await sendMessage(chatId, `How many <b>${escapeHtml(item.name)}</b>? Reply with a number (e.g. <code>2</code> or <code>1.5</code>).`);
+        await sendMessage(chatId, isGramLike(item.unit) ? `How many grams of <b>${escapeHtml(item.name)}</b>? Reply with a number (e.g. <code>150</code>).` : `How many <b>${escapeHtml(item.name)}</b>? Reply with a number (e.g. <code>2</code> or <code>1.5</code>).`);
         return void (await answerCallback(callbackId));
       }
       const options = candidatesFor(catalog, { food_key: item.food_key, display_name: item.name });
