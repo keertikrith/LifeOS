@@ -12,8 +12,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <span aria-hidden>🪔</span> Life OS
         </Link>
         <h1 className="font-display text-3xl font-extrabold leading-tight">Namaste 🙏<br />Let&apos;s begin.</h1>
-        <p className="mb-6 mt-2 text-sm text-ink-soft">Sign in to link your Telegram and see your days add up.</p>
-        {error && <p className="mb-4 rounded-2xl bg-chili-soft p-3 text-sm text-chili" role="alert">That sign-in link didn&apos;t work. Please try again.</p>}
+        <p className="mb-6 mt-2 text-sm text-ink-soft">Sign in with your email and password to link Telegram and see your days add up.</p>
+        {error && <p className="mb-4 rounded-2xl bg-chili-soft p-3 text-sm text-chili" role="alert">Something went wrong signing you in. Please try again.</p>}
         <LoginForm />
       </div>
     </main>
