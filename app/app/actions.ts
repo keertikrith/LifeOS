@@ -8,6 +8,10 @@ import { createLinkCode } from "@/lib/db/meals";
 import { ACTIVITY, computeCoachPlan, type Activity, type Sex } from "@/lib/coach/calc";
 import { saveHealthManual } from "@/lib/health/manual";
 import { createApiToken } from "@/lib/health/tokens";
+import { addEvent } from "@/lib/db/social";
+import { logSession, type LiftInput } from "@/lib/db/workouts";
+import { DEFAULT_ALLOWANCE, type EventKind } from "@/lib/social/budget";
+import { parseLift } from "@/lib/workouts/stats";
 import { env } from "@/lib/env";
 import { isValidTimeZone, localDateString, zoneWithDayStart } from "@/lib/time/day";
 
@@ -45,7 +49,11 @@ export async function saveSettings(formData: FormData) {
   const dayStart = Number(formData.get("day_start_hour") ?? 0);
   if (!isValidTimeZone(timezone) || !Number.isInteger(dayStart) || dayStart < 0 || dayStart > 6) return;
   if (target !== null && (!Number.isInteger(target) || target < 500 || target > 10000)) return;
-  await db.from("profiles").update({ timezone, calorie_target: target, day_start_hour: dayStart }).eq("id", user.id);
+  const hour = (k: string, fallback: number) => { const n = Number(formData.get(k)); return Number.isInteger(n) ? n : fallback; };
+  const wake = hour("wake_hour", 7), sleep = hour("sleep_hour", 22);
+  const outB = hour("monthly_out_budget", 4), drinkB = hour("monthly_drink_budget", 2);
+  if (wake < 0 || wake > 23 || sleep < 1 || sleep > 24 || sleep <= wake || outB < 0 || outB > 31 || drinkB < 0 || drinkB > 31) return;
+  await db.from("profiles").update({ timezone, calorie_target: target, day_start_hour: dayStart, nudges_enabled: formData.get("nudges_enabled") === "on", wake_hour: wake, sleep_hour: sleep, monthly_out_budget: outB, monthly_drink_budget: drinkB }).eq("id", user.id);
   revalidatePath("/app");
 }
 
@@ -219,4 +227,52 @@ export async function resetLogs(_prev: { ok?: boolean; error?: string }, formDat
   }
   revalidatePath("/app", "layout");
   return { ok: true };
+}
+
+// ───────────── workouts & social events ─────────────
+type Result = { ok?: boolean; error?: string };
+
+export async function logWorkout(_prev: Result, formData: FormData): Promise<Result> {
+  const { db, user } = await requireUser();
+  const today = localDateString(new Date(), await profileTz(db, user.id));
+  const date = String(formData.get("date") || today);
+  if (!validDate(date) || date > today) return { error: "Pick today or an earlier date." };
+  const title = String(formData.get("title") ?? "").trim().slice(0, 60) || "Workout";
+  const minutes = Number(String(formData.get("minutes") ?? "").trim()) || null;
+  if (minutes !== null && (minutes < 1 || minutes > 600)) return { error: "Minutes should be between 1 and 600." };
+  const lifts: LiftInput[] = [];
+  for (const line of String(formData.get("lifts") ?? "").split("\n").map((l) => l.trim()).filter(Boolean)) {
+    const l = parseLift(line);
+    if (!l) return { error: `Couldn't read “${line.slice(0, 40)}”. Use: exercise 3x8 40 (weight optional).` };
+    lifts.push(l);
+  }
+  await logSession(db, user.id, date, title, { minutes, note: String(formData.get("note") ?? "").trim().slice(0, 300) || null, lifts });
+  revalidatePath("/app", "layout");
+  return { ok: true };
+}
+
+export async function deleteWorkout(sessionId: string) {
+  const { db, user } = await requireUser();
+  await db.from("workout_sessions").delete().eq("id", sessionId).eq("user_id", user.id);
+  revalidatePath("/app", "layout");
+}
+
+export async function addSocialEvent(_prev: Result, formData: FormData): Promise<Result> {
+  const { db, user } = await requireUser();
+  const today = localDateString(new Date(), await profileTz(db, user.id));
+  const date = String(formData.get("date") ?? "");
+  const kind = String(formData.get("kind")) as EventKind;
+  if (!validDate(date) || date < today) return { error: "Pick today or a future date." };
+  if (kind !== "out" && kind !== "drinks") return { error: "Pick eating out or drinks." };
+  const allowance = Number(String(formData.get("allowance") ?? "").trim() || DEFAULT_ALLOWANCE[kind]);
+  if (!Number.isFinite(allowance) || allowance < 0 || allowance > 3000) return { error: "Extra calories should be between 0 and 3000." };
+  await addEvent(db, user.id, { date, kind, today, allowance: Math.round(allowance), note: String(formData.get("note") ?? "").trim().slice(0, 100) || undefined });
+  revalidatePath("/app", "layout");
+  return { ok: true };
+}
+
+export async function deleteSocialEvent(id: string) {
+  const { db, user } = await requireUser();
+  await db.from("social_events").delete().eq("id", id).eq("user_id", user.id);
+  revalidatePath("/app", "layout");
 }

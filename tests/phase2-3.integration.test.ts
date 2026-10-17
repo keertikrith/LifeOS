@@ -30,13 +30,14 @@ const { createLinkCode } = await import("@/lib/db/meals");
 const { createHabit, getJournal } = await import("@/lib/db/life");
 const { handleUpdate } = await import("@/lib/telegram/service");
 const { POST, GET } = await import("@/app/api/health/ingest/route");
-const { localDateString } = await import("@/lib/time/day");
+const { localDateString, zoneWithDayStart } = await import("@/lib/time/day");
 
 const db = adminClient();
 const CHAT = 880000 + Math.floor(Math.random() * 1000);
 let userId = "", token = "", tokenId = "";
 const email = `p23-${Date.now()}@example.com`;
-const today = localDateString(new Date(), "Asia/Kolkata");
+// new profiles default to a 4 AM day start, so "today" is the user's day, not the calendar date
+const today = localDateString(new Date(), zoneWithDayStart("Asia/Kolkata", 4));
 
 const ingest = (body: unknown, tok: string | null = token) =>
   POST(new Request("http://x/api/health/ingest", { method: "POST", headers: { ...(tok ? { authorization: `Bearer ${tok}` } : {}), "content-type": "application/json" }, body: typeof body === "string" ? body : JSON.stringify(body) }));
@@ -99,8 +100,9 @@ describe("health ingest", () => {
   });
 
   it("accepts a multi-day backfill", async () => {
-    const d1 = localDateString(new Date(Date.now() - 86_400_000), "Asia/Kolkata");
-    const d2 = localDateString(new Date(Date.now() - 2 * 86_400_000), "Asia/Kolkata");
+    const zone = zoneWithDayStart("Asia/Kolkata", 4);
+    const d1 = localDateString(new Date(Date.now() - 86_400_000), zone);
+    const d2 = localDateString(new Date(Date.now() - 2 * 86_400_000), zone);
     expect((await ingest({ days: [{ date: d1, steps: 100 }, { date: d2, steps: 200 }] })).status).toBe(200);
     const { count } = await db.from("health_daily").select("*", { count: "exact", head: true }).eq("user_id", userId);
     expect(count).toBe(3);

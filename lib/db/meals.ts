@@ -48,6 +48,8 @@ export interface BotUser {
   timezone: string;
   calorie_target: number | null;
   display_name: string | null;
+  monthly_out_budget: number;
+  monthly_drink_budget: number;
 }
 
 // Supabase results are untyped here; callers cast to the row interfaces above.
@@ -81,7 +83,7 @@ export async function saveDefault(db: SupabaseClient, userId: string, d: UserDef
 export async function getBotUser(db: SupabaseClient, chatId: number): Promise<BotUser | null> {
   const link = ok(await db.from("telegram_links").select("user_id, chat_id, pending_action").eq("chat_id", chatId).maybeSingle(), "getBotUser");
   if (!link) return null;
-  const profile = ok(await db.from("profiles").select("timezone, calorie_target, display_name, day_start_hour").eq("id", link.user_id).single(), "getProfile");
+  const profile = ok(await db.from("profiles").select("timezone, calorie_target, display_name, day_start_hour, monthly_out_budget, monthly_drink_budget").eq("id", link.user_id).single(), "getProfile");
   const { day_start_hour, ...rest } = profile as { timezone: string; day_start_hour: number | null };
   // `timezone` carries the day-start hour too (see zoneWithDayStart), so every day calculation honours it
   return { ...link, ...profile, ...rest, timezone: zoneWithDayStart(rest.timezone, day_start_hour) } as BotUser;

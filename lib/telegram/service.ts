@@ -16,6 +16,8 @@ import { moodCallback, saveJournalReply, showHabits, startJournal, toggleHabitCa
 import { healthRange } from "@/lib/db/life";
 import { dailyBalance } from "@/lib/health/balance";
 import { saveHealthManual } from "@/lib/health/manual";
+import { budgetCommand, eventCommand, liftCommand, nudgeCommand, workoutCommand, workoutDoneCallback } from "./extras";
+import { targetForDay } from "@/lib/db/social";
 import { loadCoach } from "@/lib/coach/load";
 import { WEEKDAY_NAMES } from "@/lib/coach/workouts";
 import { isoWeekday } from "@/lib/habits/schedule";
@@ -64,6 +66,11 @@ async function handleText(db: SupabaseClient, chatId: number, text: string, repl
   if (cmd === "/steps" || cmd === "/weight" || cmd === "/burn" || cmd === "/sleep") return healthCommand(db, user, cmd, rest);
   if (cmd === "/coach" || cmd === "/plan") return coachCommand(db, user, cmd === "/plan");
   if (cmd === "/habits") return showHabits(db, user);
+  if (cmd === "/nudges" || cmd === "/pause" || cmd === "/resume" || cmd === "/hours") return nudgeCommand(db, user, cmd, rest);
+  if (cmd === "/out" || cmd === "/drinks") return eventCommand(db, user, cmd === "/out" ? "out" : "drinks", rest);
+  if (cmd === "/budget") return budgetCommand(db, user);
+  if (cmd === "/workout") return workoutCommand(db, user);
+  if (cmd === "/lift") return liftCommand(db, user, rest.join(" "));
   if (cmd === "/journal" || cmd === "/note") return startJournal(db, user, rest.join(" "));
   if (cmd) return void (await sendMessage(chatId, HELP));
 
@@ -128,7 +135,8 @@ async function today(db: SupabaseClient, user: BotUser) {
   const [health] = await healthRange(db, user.user_id, date, date);
   const eaten = Math.round(logs.reduce((s, l) => s + Number(l.total_kcal), 0));
   const balance = dailyBalance({ eaten, activeKcal: health?.active_kcal ?? null, restingKcal: health?.resting_kcal ?? null });
-  await sendMessage(user.chat_id, todayMessage({ name: user.display_name, logs, target: user.calorie_target, balance }));
+  const { target } = await targetForDay(db, user.user_id, date, user.calorie_target);
+  await sendMessage(user.chat_id, todayMessage({ name: user.display_name, logs, target, balance }));
 }
 
 async function undo(db: SupabaseClient, user: BotUser) {
@@ -193,6 +201,7 @@ async function handleCallback(db: SupabaseClient, chatId: number, messageId: num
 
   // habits ("h|habitId|date") and mood ("j|1-5|date") aren't tied to a meal log
   if (action === "h") return toggleHabitCallback(db, user, chatId, messageId, callbackId, logId, posRaw);
+  if (action === "w") return workoutDoneCallback(db, user, callbackId, logId);
   if (action === "j") return moodCallback(db, user, chatId, messageId, callbackId, Number(logId), posRaw);
 
   const log = await getLog(db, user.user_id, logId);

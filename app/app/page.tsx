@@ -7,6 +7,8 @@ import { adminClient } from "@/lib/db/clients";
 import { getJournal, habitStatuses, mealsForDate, trend } from "@/lib/db/life";
 import { autoConfirmStale } from "@/lib/db/meals";
 import { loggingStreak } from "@/lib/db/stats";
+import { targetForDay } from "@/lib/db/social";
+import { loadCoach } from "@/lib/coach/load";
 import { env } from "@/lib/env";
 import { greetingFor, nudgeFor } from "@/lib/greeting";
 import { averageBalance, dailyBalance, describeBalance } from "@/lib/health/balance";
@@ -19,16 +21,21 @@ const MEAL_LABEL = { breakfast: " Breakfast", lunch: " Lunch", snack: " Snack", 
 const fmt = (n: number) => Math.round(n).toLocaleString("en-IN");
 
 export default async function Dashboard() {
-  const { db, userId, tz, now, today, displayName, target } = await requireSession();
+  const { db, userId, tz, now, today, displayName, target: baseTarget } = await requireSession();
   await autoConfirmStale(adminClient(), userId, env.autoConfirmMinutes()); // honour auto-confirm for logs never tapped in Telegram
 
-  const [logs, week, streak, habits, journal] = await Promise.all([
+  const [logs, week, streak, habits, journal, adj, coach] = await Promise.all([
     mealsForDate(db, userId, tz, today),
     trend(db, userId, tz, today, 7),
     loggingStreak(db, userId, tz, now),
     habitStatuses(db, userId, today),
     getJournal(db, userId, today),
+    targetForDay(db, userId, today, baseTarget),
+    loadCoach(db, userId, today),
   ]);
+  const target = adj.target;
+  const proteinTarget = coach?.result.ok ? coach.result.proteinG : null;
+  const proteinEaten = Math.round(logs.reduce((s, l) => s + l.items.reduce((a, i) => a + Number(i.protein_g), 0), 0));
 
   const eaten = Math.round(logs.reduce((s, l) => s + Number(l.total_kcal), 0));
   const todayRow = week[week.length - 1];
@@ -64,7 +71,7 @@ export default async function Dashboard() {
           </dl>
           <p className="mt-3 text-center text-sm text-ink-soft">
             {bal.kind === "balance" ? <>Today so far: <b>{describeBalance(bal.balance)}</b></> : hasFood ? <><b>No burn data</b> for today yet — it arrives when your Apple Health sync runs.</> : <>Log a meal to see today&apos;s balance.</>}
-            {diff !== null && <><br />Target {fmt(target!)} · {diff >= 0 ? <b className="text-leaf">{fmt(diff)} kcal remaining</b> : <b className="text-maroon">{fmt(-diff)} kcal above</b>}</>}
+            {diff !== null && <><br />Target {fmt(target!)}{adj.delta !== 0 && <span> ({adj.delta > 0 ? "+" : ""}{adj.delta} for your plan)</span>} · {diff >= 0 ? <b className="text-leaf">{fmt(diff)} kcal remaining</b> : <b className="text-maroon">{fmt(-diff)} kcal above</b>}{proteinTarget && <><br />Protein {proteinEaten} / {proteinTarget} g</>}</>}
           </p>
         </section>
 

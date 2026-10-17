@@ -90,4 +90,7 @@ Just tell me what you ate — in English, हिन्दी, ಕನ್ನಡ or
 /coach — your calorie & protein plan
 /plan — today's workout
 /target 2000 — set your daily kcal target
+/workout — mark today's session done · /lift bench press 3x8 40 — log sets
+/out sat · /drinks fri — plan a night out (I bank calories ahead) · /budget — this month
+/nudges on|off · /pause 24 · /hours 7 22 — control my check-ins
 /burn 450 1600 · /steps 8000 · /weight 68.4 · /sleep 7.5 — add today's health numbers`;
