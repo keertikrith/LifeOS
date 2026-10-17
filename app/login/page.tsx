@@ -1,0 +1,21 @@
+import Link from "next/link";
+import { LoginForm } from "@/components/login-form";
+
+export const metadata = { title: "Sign in · Life OS" };
+
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const { error } = await searchParams;
+  return (
+    <main className="kolam flex min-h-dvh items-center justify-center px-4 py-10">
+      <div className="card rise w-full max-w-sm p-7">
+        <Link href="/" className="mb-6 flex items-center gap-2 font-display text-xl font-bold text-maroon">
+          <span aria-hidden>🪔</span> Life OS
+        </Link>
+        <h1 className="font-display text-3xl font-extrabold leading-tight">Namaste 🙏<br />Let&apos;s begin.</h1>
+        <p className="mb-6 mt-2 text-sm text-ink-soft">Sign in to link your Telegram and see your days add up.</p>
+        {error && <p className="mb-4 rounded-2xl bg-chili-soft p-3 text-sm text-chili" role="alert">That sign-in link didn&apos;t work. Please try again.</p>}
+        <LoginForm />
+      </div>
+    </main>
+  );
+}

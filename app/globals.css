@@ -1,26 +1,146 @@
 @import "tailwindcss";
 
+/* ───────── Life OS design tokens: saffron · turmeric · maroon · leaf on cream ───────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --bg: #fff8ec;
+  --bg-soft: #fdf0d8;
+  --surface: #ffffff;
+  --surface-warm: #fffaf1;
+  --ink: #3b1d12;
+  --ink-soft: #7a5a48;
+  --line: #f0dfc2;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --saffron: #f28a1b;
+  --saffron-deep: #d86f00;
+  --turmeric: #f5b700;
+  --maroon: #7a1f2b;
+  --leaf: #2e7d4f;
+  --leaf-soft: #e3f2e8;
+  --chili: #d64933;
+  --chili-soft: #fde8e3;
+
+  --shadow: 0 1px 2px rgb(122 31 43 / 0.05), 0 8px 24px -8px rgb(122 31 43 / 0.12);
+  --kolam-ink: rgb(242 138 27 / 0.12);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #1b110c;
+    --bg-soft: #24160f;
+    --surface: #2a1a12;
+    --surface-warm: #301e15;
+    --ink: #fbefdd;
+    --ink-soft: #c4a58c;
+    --line: #432b1e;
+
+    --saffron: #ff9e3d;
+    --saffron-deep: #ffb25e;
+    --turmeric: #ffc933;
+    --maroon: #e58a94;
+    --leaf: #6fcf97;
+    --leaf-soft: #1d3326;
+    --chili: #ff7a63;
+    --chili-soft: #3b1f19;
+
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -8px rgb(0 0 0 / 0.5);
+    --kolam-ink: rgb(255 158 61 / 0.1);
   }
 }
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-soft: var(--bg-soft);
+  --color-surface: var(--surface);
+  --color-surface-warm: var(--surface-warm);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-line: var(--line);
+  --color-saffron: var(--saffron);
+  --color-saffron-deep: var(--saffron-deep);
+  --color-turmeric: var(--turmeric);
+  --color-maroon: var(--maroon);
+  --color-leaf: var(--leaf);
+  --color-leaf-soft: var(--leaf-soft);
+  --color-chili: var(--chili);
+  --color-chili-soft: var(--chili-soft);
+  --font-sans: var(--font-body), "Noto Sans Devanagari", "Noto Sans Kannada", "Noto Sans Telugu", system-ui, sans-serif;
+  --font-display: var(--font-display), Georgia, serif;
+}
+
+html {
+  background: var(--bg);
+  color-scheme: light dark;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Kolam-inspired dotted lattice used as a quiet background texture */
+.kolam {
+  background-image:
+    radial-gradient(circle at 12px 12px, var(--kolam-ink) 2px, transparent 2.5px),
+    radial-gradient(circle at 36px 36px, var(--kolam-ink) 2px, transparent 2.5px);
+  background-size: 48px 48px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, var(--saffron), var(--turmeric));
+  color: #3b1d12;
+  font-weight: 700;
+  padding: 0.8rem 1.5rem;
+  box-shadow: 0 6px 18px -6px rgb(242 138 27 / 0.6);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 22px -6px rgb(242 138 27 / 0.7); }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  padding: 0.75rem 1.4rem;
+  transition: background 0.15s ease;
+}
+.btn-ghost:hover { background: var(--bg-soft); }
+
+.field {
+  width: 100%;
+  border-radius: 0.9rem;
+  border: 1px solid var(--line);
+  background: var(--surface-warm);
+  padding: 0.75rem 1rem;
+  color: var(--ink);
+  outline: none;
+}
+.field:focus { border-color: var(--saffron); box-shadow: 0 0 0 3px rgb(242 138 27 / 0.25); }
+
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise 0.5s ease both; }
+@keyframes flicker { 0%, 100% { transform: scale(1) rotate(-2deg); } 50% { transform: scale(1.08) rotate(2deg); } }
+.flame { display: inline-block; animation: flicker 1.6s ease-in-out infinite; transform-origin: 50% 90%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rise, .flame { animation: none; }
 }

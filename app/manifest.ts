@@ -1,0 +1,19 @@
+import type { MetadataRoute } from "next";
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: "Life OS",
+    short_name: "Life OS",
+    description: "Log meals in plain words and see how your days add up.",
+    start_url: "/app",
+    scope: "/",
+    display: "standalone",
+    background_color: "#fff8ec",
+    theme_color: "#f28a1b",
+    icons: [
+      { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+      { src: "/icons/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+    ],
+  };
+}
