@@ -15,7 +15,7 @@ import { localHour } from "@/lib/time/day";
 export const metadata = { title: "Today · Life OS" };
 export const dynamic = "force-dynamic";
 
-const MEAL_LABEL = { breakfast: "🌅 Breakfast", lunch: "🍛 Lunch", snack: "🫖 Snack", dinner: "🌙 Dinner" } as const;
+const MEAL_LABEL = { breakfast: " Breakfast", lunch: " Lunch", snack: " Snack", dinner: " Dinner" } as const;
 const fmt = (n: number) => Math.round(n).toLocaleString("en-IN");
 
 export default async function Dashboard() {
@@ -54,13 +54,13 @@ export default async function Dashboard() {
         <section className="card rise p-6 md:col-span-3" aria-labelledby="today-h">
           <div className="mb-4 flex items-center justify-between">
             <h2 id="today-h" className="font-display text-lg font-bold">Today</h2>
-            {streak > 0 && <span className="rounded-full bg-bg-soft px-3 py-1 text-sm font-bold text-saffron-deep"><span className="flame" aria-hidden>🔥</span> {streak}-day logging streak</span>}
+            {streak > 0 && <span className=" bg-bg-soft px-3 py-1 text-sm font-bold text-saffron-deep">{streak}-day logging streak</span>}
           </div>
           <CalorieRing eaten={eaten} target={target} />
           <dl className="mt-5 grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-2xl bg-bg-soft p-3"><dt className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">Eaten</dt><dd className="font-display text-xl font-bold tabular-nums">{fmt(eaten)}</dd></div>
-            <div className="rounded-2xl bg-bg-soft p-3"><dt className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">Burned</dt><dd className="font-display text-xl font-bold tabular-nums">{bal.kind === "balance" ? fmt(bal.burned) : "—"}</dd></div>
-            <div className="rounded-2xl bg-bg-soft p-3"><dt className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">Balance</dt><dd className={`font-display text-xl font-bold tabular-nums ${bal.kind === "balance" ? (bal.label === "deficit" ? "text-leaf" : "text-saffron-deep") : "text-ink-soft"}`}>{bal.kind === "balance" ? `${bal.balance > 0 ? "+" : ""}${fmt(bal.balance)}` : "—"}</dd></div>
+            <div className=" bg-bg-soft p-3"><dt className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">Eaten</dt><dd className="font-display text-xl font-bold tabular-nums">{fmt(eaten)}</dd></div>
+            <div className=" bg-bg-soft p-3"><dt className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">Burned</dt><dd className="font-display text-xl font-bold tabular-nums">{bal.kind === "balance" ? fmt(bal.burned) : "—"}</dd></div>
+            <div className=" bg-bg-soft p-3"><dt className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">Balance</dt><dd className={`font-display text-xl font-bold tabular-nums ${bal.kind === "balance" ? (bal.label === "deficit" ? "text-leaf" : "text-saffron-deep") : "text-ink-soft"}`}>{bal.kind === "balance" ? `${bal.balance > 0 ? "+" : ""}${fmt(bal.balance)}` : "—"}</dd></div>
           </dl>
           <p className="mt-3 text-center text-sm text-ink-soft">
             {bal.kind === "balance" ? <>Today so far: <b>{describeBalance(bal.balance)}</b></> : hasFood ? <><b>No burn data</b> for today yet — it arrives when your Apple Health sync runs.</> : <>Log a meal to see today&apos;s balance.</>}
@@ -95,7 +95,7 @@ export default async function Dashboard() {
           {habits.length === 0 ? (
             <p className="text-sm text-ink-soft">No habits yet. <Link href="/app/habits" className="font-semibold text-saffron-deep underline">Add your first →</Link></p>
           ) : (
-            <ul className="space-y-2">{due.map((h) => <HabitRow key={h.id} h={h} date={today} compact />)}{due.length === 0 && <li className="text-sm text-ink-soft">Nothing scheduled today — enjoy the rest day 🌿</li>}</ul>
+            <ul className="space-y-2">{due.map((h) => <HabitRow key={h.id} h={h} date={today} compact />)}{due.length === 0 && <li className="text-sm text-ink-soft">Nothing scheduled today — enjoy the rest day </li>}</ul>
           )}
         </section>
 
@@ -111,7 +111,7 @@ export default async function Dashboard() {
         <h2 id="meals-h" className="mb-4 font-display text-lg font-bold">Meals today</h2>
         {logs.length === 0 ? (
           <div className="py-6 text-center">
-            <p className="text-4xl" aria-hidden>🍽️</p>
+            <p className="text-4xl" aria-hidden></p>
             <p className="mt-2 font-semibold">Nothing logged yet</p>
             <p className="text-sm text-ink-soft">Message the bot something like “2 idli and filter coffee”. <Link href="/app/settings" className="font-semibold text-saffron-deep underline">Link Telegram</Link></p>
           </div>
@@ -120,15 +120,15 @@ export default async function Dashboard() {
             {logs.map((l) => (
               <li key={l.id}>
                 <div className="mb-1.5 flex items-baseline justify-between">
-                  <h3 className="font-semibold">{l.meal_type ? MEAL_LABEL[l.meal_type] : "🍽 Meal"}</h3>
+                  <h3 className="font-semibold">{l.meal_type ? MEAL_LABEL[l.meal_type] : " Meal"}</h3>
                   <span className="text-sm font-bold tabular-nums text-saffron-deep">{fmt(l.total_kcal)} kcal</span>
                 </div>
-                <ul className="divide-y divide-line rounded-2xl border border-line bg-surface-warm">
+                <ul className="divide-y divide-line  border border-line bg-surface-warm">
                   {l.items.map((i) => (
                     <li key={i.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
                       <span>
                         {Number.isInteger(i.quantity) ? i.quantity : Math.round(i.quantity * 100) / 100} {i.unit} · {i.name}
-                        {i.match_type === "estimated" && <span className="ml-2 rounded-full bg-chili-soft px-2 py-0.5 text-[11px] font-semibold text-chili">≈ estimated</span>}
+                        {i.match_type === "estimated" && <span className="ml-2  bg-chili-soft px-2 py-0.5 text-[11px] font-semibold text-chili">≈ estimated</span>}
                       </span>
                       <span className="tabular-nums text-ink-soft">{fmt(i.kcal)}</span>
                     </li>

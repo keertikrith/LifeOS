@@ -42,10 +42,10 @@ export function LoginForm() {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 rounded-full border border-line bg-surface p-1 text-sm font-semibold" role="tablist" aria-label="Sign in or create account">
+      <div className="grid grid-cols-2  border border-line bg-surface p-1 text-sm font-semibold" role="tablist" aria-label="Sign in or create account">
         {(["signin", "signup"] as const).map((m) => (
           <button key={m} type="button" role="tab" aria-selected={mode === m} onClick={() => { setMode(m); setError(""); }}
-            className={`rounded-full py-2 transition-colors ${mode === m ? "bg-saffron/25 text-saffron-deep" : "text-ink-soft"}`}>
+            className={` py-2 transition-colors ${mode === m ? "bg-saffron/25 text-saffron-deep" : "text-ink-soft"}`}>
             {m === "signin" ? "Sign in" : "Create account"}
           </button>
         ))}
@@ -67,7 +67,7 @@ export function LoginForm() {
           {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create my account"}
         </button>
       </form>
-      {error && <p className="rounded-2xl bg-chili-soft p-3 text-sm text-chili" role="alert">{error}</p>}
+      {error && <p className=" bg-chili-soft p-3 text-sm text-chili" role="alert">{error}</p>}
     </div>
   );
 }

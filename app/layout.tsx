@@ -1,10 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
+import { Inter } from "next/font/google";
 import { ServiceWorker } from "@/components/service-worker";
 import "./globals.css";
 
-const display = Fraunces({ variable: "--font-display", subsets: ["latin"], weight: ["600", "700", "800"] });
-const body = Plus_Jakarta_Sans({ variable: "--font-body", subsets: ["latin"] });
+const body = Inter({ variable: "--font-body", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Life OS — your day, your way",
@@ -16,8 +15,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fff8ec" },
-    { media: "(prefers-color-scheme: dark)", color: "#1b110c" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -25,7 +24,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`}>
+    <html lang="en" className={body.variable}>
       <body className="min-h-dvh">
         {children}
         <ServiceWorker />

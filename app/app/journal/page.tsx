@@ -33,7 +33,7 @@ export default async function Journal({ searchParams }: { searchParams: Promise<
               {MOODS.map((m) => (
                 <label key={m.value} className="cursor-pointer">
                   <input type="radio" name="mood" value={m.value} defaultChecked={entry?.mood === m.value} className="peer sr-only" />
-                  <span className="flex flex-col items-center rounded-2xl border border-line bg-surface px-4 py-2 text-2xl peer-checked:border-saffron peer-checked:bg-saffron/15 peer-focus-visible:ring-2 peer-focus-visible:ring-saffron">{m.emoji}<span className="text-[10px] font-semibold text-ink-soft">{m.label}</span></span>
+                  <span className="flex flex-col items-center  border border-line bg-surface px-4 py-2 text-2xl peer-checked:border-saffron peer-checked:bg-saffron/15 peer-focus-visible:ring-2 peer-focus-visible:ring-saffron">{m.emoji}<span className="text-[10px] font-semibold text-ink-soft">{m.label}</span></span>
                 </label>
               ))}
             </div>
@@ -56,7 +56,7 @@ export default async function Journal({ searchParams }: { searchParams: Promise<
                   <Link href={`/app/journal?date=${e.date}`} className="text-xs font-semibold text-ink-soft underline">Edit</Link>
                 </div>
                 {e.notes && <p className="mt-1 line-clamp-3 whitespace-pre-line text-sm text-ink-soft">{e.notes}</p>}
-                {e.tags.length > 0 && <p className="mt-1.5 flex flex-wrap gap-1.5">{e.tags.map((t) => <span key={t} className="rounded-full bg-bg-soft px-2.5 py-0.5 text-xs font-semibold text-saffron-deep">#{t}</span>)}</p>}
+                {e.tags.length > 0 && <p className="mt-1.5 flex flex-wrap gap-1.5">{e.tags.map((t) => <span key={t} className=" bg-bg-soft px-2.5 py-0.5 text-xs font-semibold text-saffron-deep">#{t}</span>)}</p>}
               </li>
             ))}
           </ul>

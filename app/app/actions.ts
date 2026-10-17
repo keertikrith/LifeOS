@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { adminClient, userClient } from "@/lib/db/clients";
 import { archiveHabit, createHabit, saveJournal, setHabitDone } from "@/lib/db/life";
 import { createLinkCode } from "@/lib/db/meals";
+import { ACTIVITY, computeCoachPlan, type Activity, type Sex } from "@/lib/coach/calc";
 import { saveHealthManual } from "@/lib/health/manual";
 import { createApiToken } from "@/lib/health/tokens";
 import { localDateString } from "@/lib/time/day";
@@ -134,6 +135,38 @@ export async function logHealthManual(_prev: { ok?: boolean; error?: string }, f
   if (Object.values(metrics).every((v) => v === "")) return { error: "Enter at least one number." };
   const res = await saveHealthManual(adminClient(), user.id, date, metrics, "manual");
   if (!res.ok) return { error: res.error };
+  revalidatePath("/app", "layout");
+  return { ok: true };
+}
+
+// ───────────── coach ─────────────
+export async function saveCoach(_prev: { ok?: boolean; error?: string }, formData: FormData): Promise<{ ok?: boolean; error?: string }> {
+  const { db, user } = await requireUser();
+  const tz = await profileTz(db, user.id);
+  const today = localDateString(new Date(), tz);
+  const n = (k: string) => Number(String(formData.get(k) ?? "").trim());
+  const sex = String(formData.get("sex")) as Sex;
+  const activity = String(formData.get("activity")) as Activity;
+  const equipment = String(formData.get("equipment"));
+  const experience = String(formData.get("experience"));
+  const age = n("age"), height = n("height_cm"), weight = n("weight_kg"), goal = n("goal_weight_kg"), days = n("days_per_week");
+  const goalDateRaw = String(formData.get("goal_date") ?? "").trim();
+  if (!["female", "male", "other"].includes(sex) || !(activity in ACTIVITY) || !["home", "gym"].includes(equipment) || !["beginner", "intermediate"].includes(experience))
+    return { error: "Please fill in every choice." };
+  if (goalDateRaw && (!validDate(goalDateRaw) || goalDateRaw <= today)) return { error: "Pick a goal date in the future, or leave it blank." };
+
+  // validate with the same maths the page uses, so we never store inputs we'd refuse to plan for
+  const check = computeCoachPlan({ sex, age, heightCm: height, weightKg: weight, goalWeightKg: goal, activity, goalDate: goalDateRaw || null, today });
+  if (!check.ok) return { error: check.reason };
+
+  const { error } = await db.from("coach_profiles").upsert({
+    user_id: user.id, sex, birth_year: Number(today.slice(0, 4)) - age, height_cm: height, activity, start_weight_kg: weight, goal_weight_kg: goal,
+    goal_date: goalDateRaw || null, days_per_week: Math.min(6, Math.max(2, Math.round(days) || 3)), equipment, experience, started_on: today, updated_at: new Date().toISOString(),
+  }, { onConflict: "user_id" });
+  if (error) return { error: "Couldn't save. Please check the numbers and try again." };
+
+  // the plan's calories become your daily target (shown on Today and in Telegram)
+  await db.from("profiles").update({ calorie_target: check.targetKcal }).eq("id", user.id);
   revalidatePath("/app", "layout");
   return { ok: true };
 }

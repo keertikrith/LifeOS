@@ -86,7 +86,7 @@ function BaseChart({ kind, points, unit, title, refLine, decimals = 0, compact =
     <figure className="relative">
       <figcaption className="sr-only">{title}</figcaption>
       {!hasData ? (
-        <p className="grid h-[180px] place-items-center rounded-2xl bg-bg-soft px-6 text-center text-sm text-ink-soft">No data in this period yet.</p>
+        <p className="grid h-[180px] place-items-center  bg-bg-soft px-6 text-center text-sm text-ink-soft">No data in this period yet.</p>
       ) : (
         <>
           <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className="w-full touch-pan-y" role="img" aria-label={title} onPointerMove={onMove} onPointerLeave={() => setHover(null)} onPointerDown={onMove}>
@@ -115,7 +115,8 @@ function BaseChart({ kind, points, unit, title, refLine, decimals = 0, compact =
             )}
             {(kind === "bars-line" || kind === "line") && (
               <>
-                <path d={linePath(kind === "line" ? "value" : "value2")} fill="none" stroke={kind === "line" ? color : "var(--maroon)"} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+                {kind === "line" && seriesNames[1] && <path d={linePath("value2")} fill="none" stroke="var(--ink)" strokeWidth={2.5} strokeDasharray="6 4" strokeLinejoin="round" strokeLinecap="round" />}
+                <path d={linePath(kind === "line" ? "value" : "value2")} fill="none" stroke={kind === "line" ? color : "var(--maroon)"} strokeWidth={kind === "line" && seriesNames[1] ? 1.25 : 2} strokeLinejoin="round" strokeLinecap="round" />
                 {points.map((p, i) => {
                   const v = kind === "line" ? p.value : p.value2;
                   return v != null && n <= 31 ? <circle key={p.date} cx={x(i)} cy={y(v)} r={hover === i ? 4.5 : 3} fill={kind === "line" ? color : "var(--maroon)"} stroke="var(--surface)" strokeWidth={2} /> : null;
@@ -125,23 +126,24 @@ function BaseChart({ kind, points, unit, title, refLine, decimals = 0, compact =
             {hover != null && <line x1={x(hover)} x2={x(hover)} y1={PAD.t} y2={PAD.t + ih} stroke="var(--ink-soft)" strokeWidth={1} strokeDasharray="3 3" />}
           </svg>
           {hp && (
-            <div className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 rounded-xl border border-line bg-surface px-3 py-2 text-xs shadow-lg" style={{ left: `${tipLeft}%` }} role="status">
+            <div className="pointer-events-none absolute top-0 z-10 -translate-x-1/2  border border-line bg-surface px-3 py-2 text-xs shadow-lg" style={{ left: `${tipLeft}%` }} role="status">
               <p className="mb-1 font-bold">{weekday(hp.date)}, {dayLabel(hp.date)}</p>
-              <p><span className="inline-block h-2 w-2 rounded-full align-middle" style={{ background: kind === "diverging" ? ((hp.value ?? 0) >= 0 ? "var(--saffron)" : "var(--leaf)") : color }} /> {seriesNames[0]}: <b>{hp.value == null ? "no data" : `${kind === "diverging" && hp.value > 0 ? "+" : ""}${fmt(hp.value)} ${unit}`}</b></p>
-              {kind === "bars-line" && <p><span className="inline-block h-2 w-2 rounded-full bg-maroon align-middle" /> {seriesNames[1]}: <b>{hp.value2 == null ? "no burn data" : `${fmt(hp.value2)} ${unit}`}</b></p>}
+              <p><span className="inline-block h-2 w-2  align-middle" style={{ background: kind === "diverging" ? ((hp.value ?? 0) >= 0 ? "var(--saffron)" : "var(--leaf)") : color }} /> {seriesNames[0]}: <b>{hp.value == null ? "no data" : `${kind === "diverging" && hp.value > 0 ? "+" : ""}${fmt(hp.value)} ${unit}`}</b></p>
+              {kind === "line" && seriesNames[1] && <p>{seriesNames[1]}: <b>{hp.value2 == null ? "—" : `${fmt(hp.value2)} ${unit}`}</b></p>}
+              {kind === "bars-line" && <p><span className="inline-block h-2 w-2  bg-maroon align-middle" /> {seriesNames[1]}: <b>{hp.value2 == null ? "no burn data" : `${fmt(hp.value2)} ${unit}`}</b></p>}
             </div>
           )}
           {kind === "bars-line" && (
             <p className="mt-1 flex gap-4 text-xs text-ink-soft" aria-hidden>
-              <span><span className="mr-1 inline-block h-2.5 w-2.5 rounded-sm align-middle" style={{ background: color }} />{seriesNames[0]}</span>
+              <span><span className="mr-1 inline-block h-2.5 w-2.5  align-middle" style={{ background: color }} />{seriesNames[0]}</span>
               <span><span className="mr-1 inline-block h-0.5 w-4 align-middle bg-maroon" />{seriesNames[1]}</span>
             </p>
           )}
           <details className="mt-2 text-xs text-ink-soft">
             <summary className="cursor-pointer font-semibold">View as table</summary>
             <table className="mt-2 w-full text-left">
-              <thead><tr><th className="py-1">Date</th><th>{seriesNames[0]}</th>{kind === "bars-line" && <th>{seriesNames[1]}</th>}</tr></thead>
-              <tbody>{points.map((p) => <tr key={p.date} className="border-t border-line"><td className="py-1">{dayLabel(p.date)}</td><td>{p.value == null ? "—" : `${fmt(p.value)} ${unit}`}</td>{kind === "bars-line" && <td>{p.value2 == null ? "—" : `${fmt(p.value2)} ${unit}`}</td>}</tr>)}</tbody>
+              <thead><tr><th className="py-1">Date</th><th>{seriesNames[0]}</th>{(kind === "bars-line" || (kind === "line" && seriesNames[1])) && <th>{seriesNames[1]}</th>}</tr></thead>
+              <tbody>{points.map((p) => <tr key={p.date} className="border-t border-line"><td className="py-1">{dayLabel(p.date)}</td><td>{p.value == null ? "—" : `${fmt(p.value)} ${unit}`}</td>{(kind === "bars-line" || (kind === "line" && seriesNames[1])) && <td>{p.value2 == null ? "—" : `${fmt(p.value2)} ${unit}`}</td>}</tr>)}</tbody>
             </table>
           </details>
         </>

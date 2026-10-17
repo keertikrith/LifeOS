@@ -87,5 +87,7 @@ Just tell me what you ate — in English, हिन्दी, ಕನ್ನಡ or
 /undo — remove the last log
 /habits — tick off today's habits
 /journal — log your mood and a note
+/coach — your calorie & protein plan
+/plan — today's workout
 /target 2000 — set your daily kcal target
 /burn 450 1600 · /steps 8000 · /weight 68.4 · /sleep 7.5 — add today's health numbers`;

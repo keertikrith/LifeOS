@@ -27,9 +27,9 @@ export function TokenManager({ tokens }: { tokens: TokenRow[] }) {
   return (
     <div className="space-y-4">
       {fresh && (
-        <div className="rounded-2xl border-2 border-saffron bg-saffron/10 p-4" role="status">
+        <div className=" border-2 border-saffron bg-saffron/10 p-4" role="status">
           <p className="mb-2 text-sm font-bold">Copy your token now — it won&apos;t be shown again.</p>
-          <code className="block break-all rounded-xl bg-surface p-3 font-mono text-sm">{fresh}</code>
+          <code className="block break-all  bg-surface p-3 font-mono text-sm">{fresh}</code>
           <div className="mt-3 flex gap-2">
             <button className="btn-primary !py-2 text-sm" onClick={async () => { await navigator.clipboard.writeText(fresh); setCopied(true); }}>{copied ? "Copied ✓" : "Copy token"}</button>
             <button className="btn-ghost !py-2 text-sm" onClick={() => setFresh(null)}>I&apos;ve saved it</button>
@@ -45,14 +45,14 @@ export function TokenManager({ tokens }: { tokens: TokenRow[] }) {
       {error && <p className="text-sm text-chili" role="alert">{error}</p>}
 
       {tokens.length > 0 && (
-        <ul className="divide-y divide-line rounded-2xl border border-line bg-surface-warm">
+        <ul className="divide-y divide-line  border border-line bg-surface-warm">
           {tokens.map((t) => (
             <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
               <div>
                 <p className={`font-semibold ${t.revoked_at ? "text-ink-soft line-through" : ""}`}>{t.name} <span className="ml-1 font-mono text-xs font-normal text-ink-soft">{t.token_prefix}…</span></p>
                 <p className="text-xs text-ink-soft">Created {when(t.created_at)} · last used {when(t.last_used_at)}{t.revoked_at && " · revoked"}</p>
               </div>
-              {!t.revoked_at && <button className="rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-chili hover:bg-chili-soft" disabled={pending} onClick={() => { if (confirm(`Revoke “${t.name}”? Shortcuts using it will stop working.`)) start(() => revokeToken(t.id)); }}>Revoke</button>}
+              {!t.revoked_at && <button className=" border border-line px-3 py-1.5 text-xs font-semibold text-chili hover:bg-chili-soft" disabled={pending} onClick={() => { if (confirm(`Revoke “${t.name}”? Shortcuts using it will stop working.`)) start(() => revokeToken(t.id)); }}>Revoke</button>}
             </li>
           ))}
         </ul>

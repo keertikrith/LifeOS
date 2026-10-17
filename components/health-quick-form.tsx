@@ -27,8 +27,8 @@ export function HealthQuickForm({ today }: { today: string }) {
       </div>
       <p className="text-xs text-ink-soft">Fill only what you have. Look at Health → Browse → Activity on your iPhone: “Active Energy”, “Resting Energy” and “Steps” are all there. Saving the same day again updates it.</p>
       <button className="btn-primary" disabled={pending}>{pending ? "Saving…" : "Save"}</button>
-      {state.ok && <p className="rounded-2xl bg-leaf-soft p-3 text-sm font-semibold text-leaf" role="status">Saved ✓ — your balance and trends are updated.</p>}
-      {state.error && <p className="rounded-2xl bg-chili-soft p-3 text-sm text-chili" role="alert">{state.error}</p>}
+      {state.ok && <p className=" bg-leaf-soft p-3 text-sm font-semibold text-leaf" role="status">Saved ✓ — your balance and trends are updated.</p>}
+      {state.error && <p className=" bg-chili-soft p-3 text-sm text-chili" role="alert">{state.error}</p>}
     </form>
   );
 }

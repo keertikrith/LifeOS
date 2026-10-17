@@ -1,49 +1,45 @@
 @import "tailwindcss";
 
-/* ───────── Life OS design tokens: saffron · turmeric · maroon · leaf on cream ───────── */
+/* ───────── Life OS — monochrome. One ink colour on paper; greys for hierarchy. ───────── */
 :root {
-  --bg: #fff8ec;
-  --bg-soft: #fdf0d8;
+  --bg: #ffffff;
+  --bg-soft: #f5f5f5;
   --surface: #ffffff;
-  --surface-warm: #fffaf1;
-  --ink: #3b1d12;
-  --ink-soft: #7a5a48;
-  --line: #f0dfc2;
+  --surface-warm: #fafafa;
+  --ink: #0a0a0a;
+  --ink-soft: #666666;
+  --line: #e4e4e4;
 
-  --saffron: #f28a1b;
-  --saffron-deep: #d86f00;
-  --turmeric: #f5b700;
-  --maroon: #7a1f2b;
-  --leaf: #2e7d4f;
-  --leaf-soft: #e3f2e8;
-  --chili: #d64933;
-  --chili-soft: #fde8e3;
-
-  --shadow: 0 1px 2px rgb(122 31 43 / 0.05), 0 8px 24px -8px rgb(122 31 43 / 0.12);
-  --kolam-ink: rgb(242 138 27 / 0.12);
+  /* legacy accent names are kept so every component keeps working — they are all greys now */
+  --saffron: #0a0a0a;
+  --saffron-deep: #0a0a0a;
+  --turmeric: #666666;
+  --maroon: #0a0a0a;
+  --leaf: #707070;
+  --leaf-soft: #f2f2f2;
+  --chili: #0a0a0a;
+  --chili-soft: #f2f2f2;
+  --kolam-ink: transparent;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1b110c;
-    --bg-soft: #24160f;
-    --surface: #2a1a12;
-    --surface-warm: #301e15;
-    --ink: #fbefdd;
-    --ink-soft: #c4a58c;
-    --line: #432b1e;
+    --bg: #000000;
+    --bg-soft: #111111;
+    --surface: #000000;
+    --surface-warm: #0b0b0b;
+    --ink: #fafafa;
+    --ink-soft: #a0a0a0;
+    --line: #262626;
 
-    --saffron: #ff9e3d;
-    --saffron-deep: #ffb25e;
-    --turmeric: #ffc933;
-    --maroon: #e58a94;
-    --leaf: #6fcf97;
-    --leaf-soft: #1d3326;
-    --chili: #ff7a63;
-    --chili-soft: #3b1f19;
-
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -8px rgb(0 0 0 / 0.5);
-    --kolam-ink: rgb(255 158 61 / 0.1);
+    --saffron: #fafafa;
+    --saffron-deep: #fafafa;
+    --turmeric: #a0a0a0;
+    --maroon: #fafafa;
+    --leaf: #9a9a9a;
+    --leaf-soft: #141414;
+    --chili: #fafafa;
+    --chili-soft: #141414;
   }
 }
 
@@ -64,83 +60,37 @@
   --color-chili: var(--chili);
   --color-chili-soft: var(--chili-soft);
   --font-sans: var(--font-body), "Noto Sans Devanagari", "Noto Sans Kannada", "Noto Sans Telugu", system-ui, sans-serif;
-  --font-display: var(--font-display), Georgia, serif;
+  --font-display: var(--font-body), "Noto Sans Devanagari", "Noto Sans Kannada", "Noto Sans Telugu", system-ui, sans-serif;
 }
 
-html {
-  background: var(--bg);
-  color-scheme: light dark;
-}
+html { background: var(--bg); color-scheme: light dark; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; letter-spacing: -0.005em; }
+.font-display { letter-spacing: -0.03em; font-weight: 600; }
+::selection { background: var(--ink); color: var(--bg); }
 
-body {
-  background: var(--bg);
-  color: var(--ink);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-}
+.kolam { background: none; }
 
-/* Kolam-inspired dotted lattice used as a quiet background texture */
-.kolam {
-  background-image:
-    radial-gradient(circle at 12px 12px, var(--kolam-ink) 2px, transparent 2.5px),
-    radial-gradient(circle at 36px 36px, var(--kolam-ink) 2px, transparent 2.5px);
-  background-size: 48px 48px;
-}
+.card { background: var(--surface); border: 1px solid var(--line); }
 
-.card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 1.5rem;
-  box-shadow: var(--shadow);
+.btn-primary, .btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  padding: 0.75rem 1.4rem; font-weight: 600; font-size: 0.9rem; border: 1px solid var(--ink);
+  transition: background 0.12s ease, color 0.12s ease, opacity 0.12s ease;
 }
+.btn-primary { background: var(--ink); color: var(--bg); }
+.btn-primary:hover { opacity: 0.85; }
+.btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn-ghost:hover { border-color: var(--ink); }
+button:disabled { cursor: not-allowed; }
 
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border-radius: 9999px;
-  background: linear-gradient(135deg, var(--saffron), var(--turmeric));
-  color: #3b1d12;
-  font-weight: 700;
-  padding: 0.8rem 1.5rem;
-  box-shadow: 0 6px 18px -6px rgb(242 138 27 / 0.6);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 22px -6px rgb(242 138 27 / 0.7); }
-.btn-primary:active { transform: translateY(0); }
+.field { width: 100%; border: 1px solid var(--line); background: var(--surface); padding: 0.7rem 0.9rem; color: var(--ink); outline: none; }
+.field:focus { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.field::placeholder { color: var(--ink-soft); opacity: 0.7; }
 
-.btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border-radius: 9999px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--ink);
-  font-weight: 600;
-  padding: 0.75rem 1.4rem;
-  transition: background 0.15s ease;
-}
-.btn-ghost:hover { background: var(--bg-soft); }
+a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
-.field {
-  width: 100%;
-  border-radius: 0.9rem;
-  border: 1px solid var(--line);
-  background: var(--surface-warm);
-  padding: 0.75rem 1rem;
-  color: var(--ink);
-  outline: none;
-}
-.field:focus { border-color: var(--saffron); box-shadow: 0 0 0 3px rgb(242 138 27 / 0.25); }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise 0.35s ease both; }
+.flame { display: inline-block; }
 
-@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-.rise { animation: rise 0.5s ease both; }
-@keyframes flicker { 0%, 100% { transform: scale(1) rotate(-2deg); } 50% { transform: scale(1.08) rotate(2deg); } }
-.flame { display: inline-block; animation: flicker 1.6s ease-in-out infinite; transform-origin: 50% 90%; }
-
-@media (prefers-reduced-motion: reduce) {
-  .rise, .flame { animation: none; }
-}
+@media (prefers-reduced-motion: reduce) { .rise { animation: none; } }

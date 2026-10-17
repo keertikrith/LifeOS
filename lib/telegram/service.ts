@@ -16,6 +16,9 @@ import { moodCallback, saveJournalReply, showHabits, startJournal, toggleHabitCa
 import { healthRange } from "@/lib/db/life";
 import { dailyBalance } from "@/lib/health/balance";
 import { saveHealthManual } from "@/lib/health/manual";
+import { loadCoach } from "@/lib/coach/load";
+import { WEEKDAY_NAMES } from "@/lib/coach/workouts";
+import { isoWeekday } from "@/lib/habits/schedule";
 import { localDateString } from "@/lib/time/day";
 
 export interface TgUpdate {
@@ -59,6 +62,7 @@ async function handleText(db: SupabaseClient, chatId: number, text: string, repl
   if (cmd === "/undo") return undo(db, user);
   if (cmd === "/target") return setTarget(db, user, rest[0]);
   if (cmd === "/steps" || cmd === "/weight" || cmd === "/burn" || cmd === "/sleep") return healthCommand(db, user, cmd, rest);
+  if (cmd === "/coach" || cmd === "/plan") return coachCommand(db, user, cmd === "/plan");
   if (cmd === "/habits") return showHabits(db, user);
   if (cmd === "/journal" || cmd === "/note") return startJournal(db, user, rest.join(" "));
   if (cmd) return void (await sendMessage(chatId, HELP));
@@ -150,6 +154,26 @@ async function healthCommand(db: SupabaseClient, user: BotUser, cmd: string, arg
   }
   const res = await saveHealthManual(db, user.user_id, localDateString(new Date(), user.timezone), metrics, "telegram");
   await sendMessage(user.chat_id, res.ok ? `Saved for today: <b>${escapeHtml(what)}</b> ✅` : `Couldn't save that: ${escapeHtml(res.error)}`);
+}
+
+/** /coach: calorie plan summary. /plan: today's workout. Both read the same computed plan as the web Coach page. */
+async function coachCommand(db: SupabaseClient, user: BotUser, workoutOnly: boolean) {
+  const today = localDateString(new Date(), user.timezone);
+  const view = await loadCoach(db, user.user_id, today);
+  if (!view) return void (await sendMessage(user.chat_id, "No plan yet. Set your goal on the website (Coach tab) and I'll work out your calories and workouts."));
+  const r = view.result;
+  if (!r.ok) return void (await sendMessage(user.chat_id, escapeHtml(r.reason)));
+
+  if (workoutOnly) {
+    const dow = isoWeekday(today);
+    const day = view.plan?.days.find((d) => d.weekday === dow);
+    if (!day) return void (await sendMessage(user.chat_id, `${WEEKDAY_NAMES[dow - 1]} is a rest day 🌿
+Aim for about ${r.stepsGoal.toLocaleString("en-IN")} steps and some easy stretching.`));
+    const lines = day.exercises.map((e) => `• ${escapeHtml(e.name)} — ${e.sets} × ${e.reps}`).join("\n");
+    return void (await sendMessage(user.chat_id, `🏋️ <b>${escapeHtml(day.title)}</b> — ${escapeHtml(day.focus)}\n\n${lines}\n\n<i>Leave 1–2 reps in reserve. Warm up first.</i>`));
+  }
+  const pace = r.direction === "maintain" ? "maintain your weight" : `${r.direction === "lose" ? "lose" : "gain"} about ${Math.abs(r.weeklyKg)} kg/week`;
+  await sendMessage(user.chat_id, `🎯 <b>Your plan</b>\n${view.currentWeightKg} → ${view.profile.goal_weight_kg} kg · ${pace}\n\n<b>${r.targetKcal.toLocaleString("en-IN")} kcal/day</b>\nProtein ${r.proteinG} g · Carbs ${r.carbsG} g · Fat ${r.fatG} g\nSteps ~${r.stepsGoal.toLocaleString("en-IN")}${view.progress ? `\n\n📈 ${escapeHtml(view.progress.message)}` : ""}\n\n/plan shows today's workout.`);
 }
 
 async function setTarget(db: SupabaseClient, user: BotUser, arg?: string) {

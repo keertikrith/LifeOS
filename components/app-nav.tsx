@@ -4,34 +4,42 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const ITEMS = [
-  { href: "/app", label: "Today", icon: "🏠" },
-  { href: "/app/trends", label: "Trends", icon: "📈" },
-  { href: "/app/habits", label: "Habits", icon: "🌿" },
-  { href: "/app/journal", label: "Journal", icon: "📓" },
-  { href: "/app/health", label: "Health", icon: "⌚" },
-  { href: "/app/settings", label: "Settings", icon: "⚙️" },
+  { href: "/app", label: "Today" },
+  { href: "/app/trends", label: "Insights" },
+  { href: "/app/coach", label: "Coach" },
+  { href: "/app/habits", label: "Habits" },
+  { href: "/app/journal", label: "Journal" },
+  { href: "/app/health", label: "Health" },
+  { href: "/app/settings", label: "Settings" },
 ];
+const MOBILE = ITEMS.filter((i) => !["/app/health", "/app/settings"].includes(i.href));
 
 export function AppNav() {
   const path = usePathname();
   const active = (href: string) => (href === "/app" ? path === "/app" || path.startsWith("/app/day") : path.startsWith(href));
   return (
     <>
-      {/* desktop: top pills */}
-      <nav aria-label="Main" className="hidden gap-1 overflow-x-auto md:flex">
+      {/* desktop: top links */}
+      <nav aria-label="Main" className="hidden gap-6 md:flex">
         {ITEMS.map((i) => (
           <Link key={i.href} href={i.href} aria-current={active(i.href) ? "page" : undefined}
-            className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors ${active(i.href) ? "bg-saffron/20 text-saffron-deep" : "text-ink-soft hover:bg-bg-soft"}`}>
-            <span aria-hidden>{i.icon}</span> {i.label}
+            className={`whitespace-nowrap border-b py-1 text-sm ${active(i.href) ? "border-ink font-semibold text-ink" : "border-transparent text-ink-soft hover:text-ink"}`}>
+            {i.label}
           </Link>
         ))}
       </nav>
-      {/* mobile: bottom tab bar */}
-      <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-6 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
-        {ITEMS.map((i) => (
+      {/* mobile: secondary links in the header, primary tabs at the bottom */}
+      <nav aria-label="Secondary" className="flex gap-4 text-xs md:hidden">
+        {["/app/health", "/app/settings"].map((h) => (
+          <Link key={h} href={h} aria-current={active(h) ? "page" : undefined} className={active(h) ? "font-semibold text-ink" : "text-ink-soft"}>
+            {ITEMS.find((i) => i.href === h)!.label}
+          </Link>
+        ))}
+      </nav>
+      <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-line bg-bg pb-[env(safe-area-inset-bottom)] md:hidden">
+        {MOBILE.map((i) => (
           <Link key={i.href} href={i.href} aria-current={active(i.href) ? "page" : undefined}
-            className={`flex flex-col items-center gap-0.5 py-2 text-[10px] font-semibold ${active(i.href) ? "text-saffron-deep" : "text-ink-soft"}`}>
-            <span className="text-lg leading-none" aria-hidden>{i.icon}</span>
+            className={`py-3.5 text-center text-xs ${active(i.href) ? "font-semibold text-ink" : "text-ink-soft"}`}>
             {i.label}
           </Link>
         ))}

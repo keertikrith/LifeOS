@@ -6,7 +6,7 @@ import { addHabit, archiveHabitAction } from "../actions";
 
 export const metadata = { title: "Habits · Life OS" };
 export const dynamic = "force-dynamic";
-const SUGGESTIONS = ["🧘 Yoga", "💧 8 glasses of water", "🚶 Evening walk", "📖 Read 20 min", "🙏 Pooja / meditation", "😴 In bed by 11"];
+const SUGGESTIONS = [" Yoga", " 8 glasses of water", " Evening walk", " Read 20 min", " Pooja / meditation", " In bed by 11"];
 
 export default async function Habits() {
   const { db, userId, today } = await requireSession();
@@ -26,13 +26,13 @@ export default async function Habits() {
           <h2 id="today-h" className="font-display text-lg font-bold">Today</h2>
           {due.length > 0 && <span className="text-sm font-semibold text-ink-soft">{doneCount}/{due.length} done</span>}
         </div>
-        {due.length > 0 && <div className="mb-4 h-2 overflow-hidden rounded-full bg-bg-soft" role="progressbar" aria-valuenow={doneCount} aria-valuemin={0} aria-valuemax={due.length}><div className="h-full rounded-full bg-gradient-to-r from-saffron to-turmeric transition-all" style={{ width: `${(doneCount / due.length) * 100}%` }} /></div>}
+        {due.length > 0 && <div className="mb-4 h-2 overflow-hidden  bg-bg-soft" role="progressbar" aria-valuenow={doneCount} aria-valuemin={0} aria-valuemax={due.length}><div className="h-full  bg-ink transition-all" style={{ width: `${(doneCount / due.length) * 100}%` }} /></div>}
         {habits.length === 0 ? (
-          <div className="py-6 text-center"><p className="text-4xl" aria-hidden>🌱</p><p className="mt-2 font-semibold">No habits yet</p><p className="text-sm text-ink-soft">Add one below — start with just one or two.</p></div>
+          <div className="py-6 text-center"><p className="text-4xl" aria-hidden></p><p className="mt-2 font-semibold">No habits yet</p><p className="text-sm text-ink-soft">Add one below — start with just one or two.</p></div>
         ) : (
           <ul className="space-y-2">{habits.map((h) => (
             <HabitRow key={h.id} h={h} date={today} trailing={
-              <form action={archiveHabitAction.bind(null, h.id)} className="shrink-0"><button className="rounded-full px-2 py-1 text-xs font-semibold text-ink-soft hover:bg-bg-soft" aria-label={`Archive ${h.name}`} title="Archive">✕</button></form>
+              <form action={archiveHabitAction.bind(null, h.id)} className="shrink-0"><button className=" px-2 py-1 text-xs font-semibold text-ink-soft hover:bg-bg-soft" aria-label={`Archive ${h.name}`} title="Archive">✕</button></form>
             } />
           ))}</ul>
         )}
@@ -42,7 +42,7 @@ export default async function Habits() {
         <h2 id="add-h" className="mb-4 font-display text-lg font-bold">Add a habit</h2>
         <form action={addHabit} className="space-y-4">
           <div className="flex gap-3">
-            <label className="w-20 text-sm font-semibold">Emoji<input name="emoji" maxLength={4} placeholder="🧘" className="field mt-1.5 text-center text-xl" /></label>
+            <label className="w-20 text-sm font-semibold">Emoji<input name="emoji" maxLength={4} placeholder="" className="field mt-1.5 text-center text-xl" /></label>
             <label className="flex-1 text-sm font-semibold">Name<input name="name" required maxLength={80} placeholder="e.g. Morning yoga" className="field mt-1.5" list="habit-ideas" /></label>
             <datalist id="habit-ideas">{SUGGESTIONS.map((s) => <option key={s} value={s.split(" ").slice(1).join(" ")} />)}</datalist>
           </div>
@@ -52,7 +52,7 @@ export default async function Habits() {
               {WEEKDAY_LABELS.map((d, i) => (
                 <label key={d} className="cursor-pointer">
                   <input type="checkbox" name="weekday" value={i + 1} className="peer sr-only" />
-                  <span className="block rounded-full border border-line bg-surface px-4 py-2 text-sm font-semibold peer-checked:border-saffron peer-checked:bg-saffron/20 peer-checked:text-saffron-deep peer-focus-visible:ring-2 peer-focus-visible:ring-saffron">{d}</span>
+                  <span className="block  border border-line bg-surface px-4 py-2 text-sm font-semibold peer-checked:border-saffron peer-checked:bg-saffron/20 peer-checked:text-saffron-deep peer-focus-visible:ring-2 peer-focus-visible:ring-saffron">{d}</span>
                 </label>
               ))}
             </div>

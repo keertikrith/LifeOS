@@ -43,12 +43,12 @@ export default async function HealthPage() {
         <p className="mb-4 mt-2 text-sm text-ink-soft">Your iPhone can send yesterday&apos;s totals once a day. Safe to send twice — a day is saved once, never double-counted.</p>
         <div className="space-y-4">
 
-      <section className="rounded-2xl border border-line p-5" aria-labelledby="tok-h">
+      <section className=" border border-line p-5" aria-labelledby="tok-h">
         <h2 id="tok-h" className="mb-3 font-display text-lg font-bold">1 · Access tokens</h2>
         <TokenManager tokens={tokens ?? []} />
       </section>
 
-      <section className="rounded-2xl border border-line p-5" aria-labelledby="how-h">
+      <section className=" border border-line p-5" aria-labelledby="how-h">
         <h2 id="how-h" className="mb-1 font-display text-lg font-bold">2 · Build the iPhone Shortcut (5 minutes)</h2>
         <p className="mb-4 text-sm text-ink-soft">Sends <b>today&apos;s</b> steps, active and resting calories. No dates to set. Menu names can differ slightly between iOS versions.</p>
         <ol className="list-decimal space-y-4 pl-5 text-sm leading-relaxed marker:font-bold marker:text-saffron-deep">
@@ -57,22 +57,22 @@ export default async function HealthPage() {
           <li>Add the action <i>Calculate Statistics</i> → set it to <b>Sum</b>. Then add <i>Set Variable</i> and name the variable <b>Steps</b>.</li>
           <li><b>Active calories.</b> Repeat steps 2–3, but choose Type <b>Active Energy</b> and name the variable <b>Active</b>.</li>
           <li><b>Resting calories.</b> Repeat again with Type <b>Resting Energy</b> and name the variable <b>Resting</b>.</li>
-          <li><b>Send.</b> Add <i>Get Contents of URL</i>. In the URL box paste <code className="break-all rounded bg-bg-soft px-1.5 py-0.5">{endpoint}</code>. Tap the small arrow to <b>Show More</b> and set <b>Method</b> to <b>POST</b>.</li>
-          <li><b>Header.</b> Under <b>Headers</b> tap <b>Add new header</b>: Key <code className="rounded bg-bg-soft px-1.5 py-0.5">Authorization</code>, Text <code className="rounded bg-bg-soft px-1.5 py-0.5">Bearer</code> then a space, then your token from step 1 above.</li>
+          <li><b>Send.</b> Add <i>Get Contents of URL</i>. In the URL box paste <code className="break-all  bg-bg-soft px-1.5 py-0.5">{endpoint}</code>. Tap the small arrow to <b>Show More</b> and set <b>Method</b> to <b>POST</b>.</li>
+          <li><b>Header.</b> Under <b>Headers</b> tap <b>Add new header</b>: Key <code className=" bg-bg-soft px-1.5 py-0.5">Authorization</code>, Text <code className=" bg-bg-soft px-1.5 py-0.5">Bearer</code> then a space, then your token from step 1 above.</li>
           <li><b>Body.</b> Set <b>Request Body</b> to <b>JSON</b>. Tap <b>Add new field</b> three times, choosing type <b>Number</b> each time: key <code>steps</code> → tap the value and pick variable <b>Steps</b>; key <code>active_kcal</code> → <b>Active</b>; key <code>resting_kcal</code> → <b>Resting</b>.</li>
-          <li><b>First run.</b> Tap ▶️. iOS will ask for Health access: tap <b>Allow</b> for all three. Add <i>Show Result</i> at the end if you want to see <code className="rounded bg-bg-soft px-1.5 py-0.5">{`{"ok":true,...}`}</code>. Then check “Recent days” below.</li>
+          <li><b>First run.</b> Tap ▶. iOS will ask for Health access: tap <b>Allow</b> for all three. Add <i>Show Result</i> at the end if you want to see <code className=" bg-bg-soft px-1.5 py-0.5">{`{"ok":true,...}`}</code>. Then check “Recent days” below.</li>
           <li><b>Make it one tap.</b> Easiest: <i>Settings → Accessibility → Touch → Back Tap → Double Tap</i> → pick <b>Send Health to Life OS</b>. Or in Shortcuts tap the shortcut’s ⓘ → <b>Add to Home Screen</b>. Run it in the evening when your phone is unlocked.<br /><span className="text-ink-soft">Why not a timed automation: iOS can&apos;t read Health data while the phone is locked, so a 10 pm automation often fails silently.</span></li>
         </ol>
 
         <h3 className="mb-2 mt-6 font-semibold">What the endpoint accepts</h3>
-        <pre className="overflow-x-auto rounded-2xl bg-bg-soft p-4 text-xs leading-relaxed">{sample}</pre>
+        <pre className="overflow-x-auto  bg-bg-soft p-4 text-xs leading-relaxed">{sample}</pre>
         <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-ink-soft">
           <li><code>date</code> is optional: leave it out and it means <b>today in your timezone</b> (or send YYYY-MM-DD for another day). Every metric is optional — send only what you have.</li>
           <li>A blank value is ignored, never saved as zero. Missing burn data shows as “no burn data”.</li>
           <li>Back-fill up to 31 days in one request: <code>{`{"days":[{...},{...}]}`}</code>.</li>
         </ul>
         <h3 className="mb-2 mt-5 font-semibold">Test from a terminal</h3>
-        <pre className="overflow-x-auto rounded-2xl bg-bg-soft p-4 text-xs leading-relaxed">{`curl -X POST ${endpoint} \\
+        <pre className="overflow-x-auto  bg-bg-soft p-4 text-xs leading-relaxed">{`curl -X POST ${endpoint} \\
   -H "Authorization: Bearer YOUR_TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{"steps":1000}'`}</pre>
