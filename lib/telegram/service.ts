@@ -86,7 +86,7 @@ async function logMeal(db: SupabaseClient, user: BotUser, text: string) {
   const [catalog, defaults] = await Promise.all([loadCatalog(db, user.user_id), loadDefaults(db, user.user_id)]);
   let parsed;
   try {
-    parsed = await parseMealText(text, [...new Set(catalog.map((f) => f.food_key))]);
+    parsed = await parseMealText(text, [...new Set(catalog.filter((f) => f.source !== "ifct2017").map((f) => f.food_key))]);
   } catch (e) {
     console.error("parse failed", e);
     return void (await sendMessage(user.chat_id, "Sorry, I couldn't read that one. Could you rephrase it? e.g. <i>“2 idli and a filter coffee”</i>"));

@@ -72,6 +72,10 @@ export function candidatesFor(catalog: Food[], item: Pick<ParsedItem, "food_key"
   const byKey = catalog.filter((f) => normalize(f.food_key) === key);
   if (byKey.length) return dedupeVariants(byKey);
 
+  // IFCT raw-ingredient groups are keyed "ifct_<base>"; curated dishes above always win
+  const byIfct = catalog.filter((f) => [normalize(`ifct_${item.food_key}`), normalize(`ifct_${item.display_name}`)].includes(normalize(f.food_key)));
+  if (byIfct.length) return dedupeVariants(byIfct);
+
   const byAlias = catalog.filter((f) => f.aliases.some((a) => [key, name].includes(normalize(a))));
   if (byAlias.length) return dedupeVariants(catalog.filter((f) => f.food_key === byAlias[0].food_key));
 
@@ -115,6 +119,10 @@ function findVariant(options: Food[], variant: string): Food | undefined {
 export function resolveItem(item: ParsedItem, catalog: Food[], defaults: UserDefault[]): Resolution {
   const options = candidatesFor(catalog, item);
   if (!options.length) return { kind: "unmatched" };
+
+  // IFCT rows are per 100 g. "1 piece"/"1 bowl" would silently assume 100 g, so only grams/ml match them;
+  // anything else falls through to a clearly-flagged estimate instead of a wrong "database" number.
+  if (options.every((o) => o.serving_unit === "g") && !GRAM_UNITS.has(normalize(item.unit))) return { kind: "unmatched" };
 
   const foodKey = options[0].food_key;
   const saved = defaults.find((d) => d.food_key === foodKey);

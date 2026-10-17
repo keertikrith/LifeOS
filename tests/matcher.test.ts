@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveItem, servingsFor, scaleFood, candidatesFor } from "@/lib/nutrition/matcher";
 import type { ParsedItem } from "@/lib/llm/parser";
-import { catalog } from "./fixtures";
+import { catalog, food } from "./fixtures";
 
 const item = (p: Partial<ParsedItem>): ParsedItem => ({
   food_key: "dosa", display_name: "dosa", variant: null, quantity: 1, unit: "piece", ...p,
@@ -71,5 +71,27 @@ describe("normalize keeps Indic combining marks", () => {
     expect(normalize("ಇಡ್ಲಿ")).toBe("ಇಡ್ಲಿ");
     expect(normalize("ಇಡ್ಲಿ")).not.toBe(normalize("ಇಡಲ"));
     expect(normalize("  Café-Latte!! ")).toBe("cafe latte");
+  });
+});
+
+describe("IFCT per-100 g rows", () => {
+  const ifct = [
+    food({ food_key: "ifct_tomato", name: "Tomato, green", variant: "green", serving_unit: "g", serving_grams: 100, kcal: 21, source: "ifct2017" }),
+    food({ food_key: "ifct_tomato", name: "Tomato, ripe, local", variant: "ripe, local", serving_unit: "g", serving_grams: 100, kcal: 20, source: "ifct2017" }),
+    food({ food_key: "ifct_spinach", name: "Spinach", serving_unit: "g", serving_grams: 100, kcal: 24, source: "ifct2017" }),
+  ];
+  it("matches by base name in grams, asking which variant when several exist", () => {
+    expect(resolveItem(item({ food_key: "tomato", display_name: "tomato", quantity: 200, unit: "g" }), ifct, []).kind).toBe("clarify_variant");
+    const r = resolveItem(item({ food_key: "spinach", display_name: "spinach", quantity: 150, unit: "g" }), ifct, []);
+    expect(r.kind).toBe("matched");
+    if (r.kind === "matched") expect(scaleFood(r.food, r.servings).kcal).toBe(36);
+  });
+  it("never assumes 100 g for '1 piece' — falls back to a flagged estimate", () => {
+    expect(resolveItem(item({ food_key: "spinach", display_name: "spinach", quantity: 1, unit: "bowl" }), ifct, []).kind).toBe("unmatched");
+  });
+  it("curated dishes beat IFCT rows with the same name", () => {
+    const both = [...ifct, food({ food_key: "spinach", name: "Palak", kcal: 50 })];
+    const r = resolveItem(item({ food_key: "spinach", display_name: "spinach", quantity: 1, unit: "bowl" }), both, []);
+    expect(r.kind).toBe("matched");
   });
 });
