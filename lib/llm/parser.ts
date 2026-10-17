@@ -38,6 +38,20 @@ export function validateParsedMeal(raw: unknown): ParsedMeal {
   };
 }
 
+/**
+ * LLMs occasionally mangle numbers ("150 g" -> 15). If the user typed digits and a parsed quantity (>= 2) matches none
+ * of them, the quantity is dropped so the bot asks instead of silently logging a wrong amount.
+ * Words ("ek", "a", "half") never contain ASCII digits, so those messages are left alone.
+ */
+export function sanitizeQuantities(text: string, parsed: ParsedMeal): ParsedMeal {
+  const typed = (text.match(/\d+(?:[.,]\d+)?/g) ?? []).map((t) => Number(t.replace(",", ".")));
+  if (!typed.length) return parsed;
+  return {
+    ...parsed,
+    items: parsed.items.map((i) => (i.quantity !== null && i.quantity >= 2 && !typed.some((n) => Math.abs(n - i.quantity!) < 0.01) ? { ...i, quantity: null } : i)),
+  };
+}
+
 const SYSTEM = `You extract structured food logs from messages written by an Indian user.
 The user may write in English, Hindi, Kannada, Telugu, Tamil, or a mix (Hinglish/Kanglish), in Latin or native script.
 Rules:
@@ -55,5 +69,5 @@ export async function parseMealText(text: string, knownKeys: string[]): Promise<
     prompt: `KNOWN_KEYS: ${knownKeys.join(", ")}\n\nMESSAGE:\n${text}`,
     schema: parsedMealSchema,
   });
-  return validateParsedMeal(raw);
+  return sanitizeQuantities(text, validateParsedMeal(raw));
 }

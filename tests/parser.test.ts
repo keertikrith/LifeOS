@@ -35,3 +35,23 @@ describe("parser output validation", () => {
     expect(isPlausibleEstimate({ kcal: 900, protein_g: 2, carbs_g: 10, fat_g: 1 })).toBe(false);
   });
 });
+
+describe("sanitizeQuantities", async () => {
+  const { sanitizeQuantities } = await import("@/lib/llm/parser");
+  const meal = (q: number | null) => ({ is_food_log: true, meal_type: null, items: [{ food_key: "spinach", display_name: "spinach", variant: null, quantity: q, unit: "gram" }] });
+
+  it("drops a quantity the user never typed (150 g -> 15 is caught)", () => {
+    expect(sanitizeQuantities("had 150 g spinach", meal(15)).items[0].quantity).toBeNull();
+  });
+  it("keeps quantities that match the typed digits, including decimals", () => {
+    expect(sanitizeQuantities("had 150 g spinach", meal(150)).items[0].quantity).toBe(150);
+    expect(sanitizeQuantities("2.5 cups chai", meal(2.5)).items[0].quantity).toBe(2.5);
+  });
+  it("leaves word-based amounts alone (no digits typed)", () => {
+    expect(sanitizeQuantities("ek katori dahi", meal(1)).items[0].quantity).toBe(1);
+    expect(sanitizeQuantities("do roti", meal(2)).items[0].quantity).toBe(2);
+  });
+  it("doesn't touch small word-derived amounts when other digits exist", () => {
+    expect(sanitizeQuantities("a glass of milk at 8 am", meal(1)).items[0].quantity).toBe(1);
+  });
+});
