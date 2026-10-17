@@ -13,9 +13,11 @@ interface Common {
   seriesNames?: [string, string?];
   /** decimals to show in ticks and tooltips (e.g. 1 for hours, weight) */
   decimals?: number;
+  /** narrower viewBox so labels stay legible in half-width cards */
+  compact?: boolean;
 }
 
-const W = 640, H = 230, PAD = { l: 46, r: 12, t: 14, b: 28 };
+const H = 230, PAD = { l: 46, r: 12, t: 14, b: 28 };
 const dayLabel = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" });
 const weekday = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { weekday: "short", timeZone: "UTC" });
 
@@ -28,8 +30,9 @@ function niceMax(v: number) {
 
 type Kind = "bars-line" | "diverging" | "bars" | "line";
 
-function BaseChart({ kind, points, unit, title, refLine, decimals = 0, seriesNames = ["Value"], color = "var(--saffron)" }: Common & { kind: Kind; color?: string }) {
+function BaseChart({ kind, points, unit, title, refLine, decimals = 0, compact = false, seriesNames = ["Value"], color = "var(--saffron)" }: Common & { kind: Kind; color?: string }) {
   const fmt = (n: number) => n.toLocaleString("en-IN", { maximumFractionDigits: decimals });
+  const W = compact ? 360 : 640;
   const [hover, setHover] = useState<number | null>(null);
   const ref = useRef<SVGSVGElement>(null);
   const n = points.length;
@@ -50,25 +53,26 @@ function BaseChart({ kind, points, unit, title, refLine, decimals = 0, seriesNam
     return { min: 0, max: niceMax(hi * 1.08 || 1) };
   })();
 
-  const iw = W - PAD.l - PAD.r, ih = H - PAD.t - PAD.b;
-  const x = (i: number) => PAD.l + (n === 1 ? iw / 2 : (i + 0.5) * (iw / n));
+  const PL = compact ? 54 : PAD.l;
+  const iw = W - PL - PAD.r, ih = H - PAD.t - PAD.b;
+  const x = (i: number) => PL + (n === 1 ? iw / 2 : (i + 0.5) * (iw / n));
   const y = (v: number) => PAD.t + ih - ((v - min) / (max - min)) * ih;
   const bw = Math.max(3, Math.min(26, (iw / n) * 0.62));
   const ticks = Array.from({ length: 5 }, (_, i) => min + ((max - min) * i) / 4);
-  const every = n > 14 ? 5 : 1;
+  const every = n > 14 ? (compact ? 7 : 5) : 1;
   const hasData = points.some((p) => p.value != null || p.value2 != null);
 
   function onMove(e: React.PointerEvent) {
     const r = ref.current!.getBoundingClientRect();
     const px = ((e.clientX - r.left) / r.width) * W;
-    setHover(Math.max(0, Math.min(n - 1, Math.floor((px - PAD.l) / (iw / n)))));
+    setHover(Math.max(0, Math.min(n - 1, Math.floor((px - PL) / (iw / n)))));
   }
 
   const linePath = (key: "value" | "value2") => {
     let d = "", pen = false;
     points.forEach((p, i) => {
       const v = p[key];
-      if (v == null) { pen = false; return; }
+      if (v == null) { if (kind !== "line") pen = false; return; }
       d += `${pen ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`;
       pen = true;
     });
@@ -88,11 +92,11 @@ function BaseChart({ kind, points, unit, title, refLine, decimals = 0, seriesNam
           <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className="w-full touch-pan-y" role="img" aria-label={title} onPointerMove={onMove} onPointerLeave={() => setHover(null)} onPointerDown={onMove}>
             {ticks.map((t, i) => (
               <g key={i}>
-                <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} stroke="var(--line)" strokeWidth={t === 0 && kind === "diverging" ? 1.5 : 1} />
-                <text x={PAD.l - 8} y={y(t) + 4} textAnchor="end" fontSize="11" fill="var(--ink-soft)">{fmt(t)}</text>
+                <line x1={PL} x2={W - PAD.r} y1={y(t)} y2={y(t)} stroke="var(--line)" strokeWidth={t === 0 && kind === "diverging" ? 1.5 : 1} />
+                <text x={PL - 8} y={y(t) + 4} textAnchor="end" fontSize="11" fill="var(--ink-soft)">{fmt(t)}</text>
               </g>
             ))}
-            {points.map((p, i) => (i % every === 0 || i === n - 1) && (
+            {points.map((p, i) => (i % every === 0 || (i === n - 1 && (n - 1) % every >= Math.ceil(every / 2))) && (
               <text key={p.date} x={x(i)} y={H - 8} textAnchor="middle" fontSize="11" fill="var(--ink-soft)">{n <= 7 ? weekday(p.date) : dayLabel(p.date)}</text>
             ))}
 
@@ -105,7 +109,7 @@ function BaseChart({ kind, points, unit, title, refLine, decimals = 0, seriesNam
             ))}
             {refLine && (
               <g>
-                <line x1={PAD.l} x2={W - PAD.r} y1={y(refLine.value)} y2={y(refLine.value)} stroke="var(--maroon)" strokeWidth={1.5} strokeDasharray="5 4" />
+                <line x1={PL} x2={W - PAD.r} y1={y(refLine.value)} y2={y(refLine.value)} stroke="var(--maroon)" strokeWidth={1.5} strokeDasharray="5 4" />
                 <text x={W - PAD.r} y={y(refLine.value) - 5} textAnchor="end" fontSize="11" fill="var(--ink)">{refLine.label}</text>
               </g>
             )}

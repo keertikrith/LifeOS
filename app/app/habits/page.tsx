@@ -31,10 +31,9 @@ export default async function Habits() {
           <div className="py-6 text-center"><p className="text-4xl" aria-hidden>🌱</p><p className="mt-2 font-semibold">No habits yet</p><p className="text-sm text-ink-soft">Add one below — start with just one or two.</p></div>
         ) : (
           <ul className="space-y-2">{habits.map((h) => (
-            <div key={h.id} className="flex items-center gap-2">
-              <div className="flex-1"><HabitRow h={h} date={today} /></div>
-              <form action={archiveHabitAction.bind(null, h.id)}><button className="rounded-full px-3 py-2 text-xs font-semibold text-ink-soft hover:bg-bg-soft" aria-label={`Archive ${h.name}`}>Archive</button></form>
-            </div>
+            <HabitRow key={h.id} h={h} date={today} trailing={
+              <form action={archiveHabitAction.bind(null, h.id)} className="shrink-0"><button className="rounded-full px-2 py-1 text-xs font-semibold text-ink-soft hover:bg-bg-soft" aria-label={`Archive ${h.name}`} title="Archive">✕</button></form>
+            } />
           ))}</ul>
         )}
       </section>

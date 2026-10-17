@@ -61,8 +61,8 @@ export default async function Trends({ searchParams }: { searchParams: Promise<{
       <ChartCard title="Eaten vs burned" sub="Bars: kcal eaten · Line: resting + active burn"><EatenBurnedChart points={eatenPts} unit="kcal" title="Calories eaten versus burned" refLine={target ? { value: target, label: `target ${fmt(target)}` } : null} /></ChartCard>
       <ChartCard title="Daily balance" sub="Eaten minus burned. Above zero = surplus, below = deficit."><BalanceChart points={balancePts} unit="kcal" title="Daily calorie balance" refLine={week.average === null ? null : { value: week.average, label: `7-day avg ${week.average > 0 ? "+" : ""}${fmt(week.average)}` }} /></ChartCard>
       <div className="grid gap-4 md:grid-cols-2">
-        <ChartCard title="Steps"><BarsChart points={stepsPts} unit="steps" title="Daily steps" color="var(--leaf)" seriesNames={["Steps"]} /></ChartCard>
-        <ChartCard title="Sleep"><BarsChart points={sleepPts} unit="h" title="Sleep hours" color="var(--maroon)" decimals={1} seriesNames={["Sleep"]} /></ChartCard>
+        <ChartCard title="Steps"><BarsChart points={stepsPts} unit="steps" title="Daily steps" compact color="var(--leaf)" seriesNames={["Steps"]} /></ChartCard>
+        <ChartCard title="Sleep"><BarsChart points={sleepPts} unit="h" title="Sleep hours" compact color="var(--maroon)" decimals={1} seriesNames={["Sleep"]} /></ChartCard>
       </div>
       <ChartCard title="Weight"><LineChart points={weightPts} unit="kg" title="Weight" decimals={1} seriesNames={["Weight"]} color="var(--saffron-deep)" /></ChartCard>
     </div>
