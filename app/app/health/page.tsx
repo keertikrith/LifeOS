@@ -5,7 +5,7 @@ import { healthRange } from "@/lib/db/life";
 import { env } from "@/lib/env";
 import { lastNDates } from "@/lib/health/balance";
 
-export const metadata = { title: "Apple Health · Life OS" };
+export const metadata = { title: "Health · Life OS" };
 export const dynamic = "force-dynamic";
 const fmt = (n: number | null, d = 0) => (n == null ? "—" : n.toLocaleString("en-IN", { maximumFractionDigits: d }));
 
@@ -29,7 +29,7 @@ export default async function HealthPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="font-display text-3xl font-extrabold">Apple Health sync</h1>
+        <h1 className="font-display text-3xl font-extrabold">Health numbers</h1>
         <p className="text-sm text-ink-soft">Add your numbers by hand in 20 seconds — or set up automatic sync later. Both feed the same balance and trends.</p>
       </div>
 
@@ -83,8 +83,8 @@ export default async function HealthPage() {
       </details>
 
       <section className="card rise p-6" aria-labelledby="recent-h">
-        <h2 id="recent-h" className="mb-3 font-display text-lg font-bold">3 · Recently synced</h2>
-        {rows.length === 0 ? <p className="text-sm text-ink-soft">Nothing yet. Once your Shortcut runs, days appear here.</p> : (
+        <h2 id="recent-h" className="mb-3 font-display text-lg font-bold">Recent days</h2>
+        {rows.length === 0 ? <p className="text-sm text-ink-soft">Nothing yet. Add your first day above and it will appear here.</p> : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[480px] text-left text-sm">
               <thead className="text-xs uppercase tracking-wide text-ink-soft"><tr><th className="py-2">Date</th><th>Active</th><th>Resting</th><th>Steps</th><th>Sleep</th><th>Weight</th></tr></thead>
