@@ -11,9 +11,13 @@ import { candidatesFor, resolveItem, type Food } from "@/lib/nutrition/matcher";
 import { mealTypeForHour, localHour } from "@/lib/time/day";
 import { answerCallback, editMessage, sendMessage, escapeHtml } from "./api";
 import { HELP, itemPicker, logKeyboard, logMessage, todayMessage } from "./format";
+import { moodCallback, saveJournalReply, showHabits, startJournal, toggleHabitCallback } from "./life";
+import { healthRange } from "@/lib/db/life";
+import { dailyBalance } from "@/lib/health/balance";
+import { localDateString } from "@/lib/time/day";
 
 export interface TgUpdate {
-  message?: { message_id: number; chat: { id: number }; text?: string; from?: { first_name?: string } };
+  message?: { message_id: number; chat: { id: number }; text?: string; from?: { first_name?: string }; reply_to_message?: { message_id: number } };
   callback_query?: { id: string; data?: string; message?: { message_id: number; chat: { id: number } } };
 }
 
@@ -21,7 +25,7 @@ const NOT_LINKED =
   "Namaste 🙏 I'm not linked to a Life OS account yet.\nSign in on the website, copy your one-time code, then send <code>/start YOURCODE</code> here.";
 
 export async function handleUpdate(db: SupabaseClient, update: TgUpdate) {
-  if (update.message?.text) return handleText(db, update.message.chat.id, update.message.text.trim());
+  if (update.message?.text) return handleText(db, update.message.chat.id, update.message.text.trim(), update.message.reply_to_message?.message_id);
   if (update.callback_query?.data && update.callback_query.message) {
     const { id, data, message } = update.callback_query;
     return handleCallback(db, message.chat.id, message.message_id, id, data!);
@@ -29,7 +33,7 @@ export async function handleUpdate(db: SupabaseClient, update: TgUpdate) {
 }
 
 // ───────────────────────── text ─────────────────────────
-async function handleText(db: SupabaseClient, chatId: number, text: string) {
+async function handleText(db: SupabaseClient, chatId: number, text: string, replyToId?: number) {
   const [cmdRaw, ...rest] = text.split(/\s+/);
   const cmd = cmdRaw.startsWith("/") ? cmdRaw.split("@")[0].toLowerCase() : null;
 
@@ -52,7 +56,12 @@ async function handleText(db: SupabaseClient, chatId: number, text: string) {
   if (cmd === "/today") return today(db, user);
   if (cmd === "/undo") return undo(db, user);
   if (cmd === "/target") return setTarget(db, user, rest[0]);
+  if (cmd === "/habits") return showHabits(db, user);
+  if (cmd === "/journal" || cmd === "/note") return startJournal(db, user, rest.join(" "));
   if (cmd) return void (await sendMessage(chatId, HELP));
+
+  // a reply to the journal prompt is a journal note, never a meal
+  if (await saveJournalReply(db, user, text, replyToId)) return;
 
   // awaiting a typed quantity from ✏️?
   if (user.pending_action?.type === "edit_qty") {
@@ -105,7 +114,11 @@ async function logMeal(db: SupabaseClient, user: BotUser, text: string) {
 // ───────────────────────── commands ─────────────────────────
 async function today(db: SupabaseClient, user: BotUser) {
   const logs = await confirmedLogsForDay(db, user.user_id, user.timezone);
-  await sendMessage(user.chat_id, todayMessage({ name: user.display_name, logs, target: user.calorie_target }));
+  const date = localDateString(new Date(), user.timezone);
+  const [health] = await healthRange(db, user.user_id, date, date);
+  const eaten = Math.round(logs.reduce((s, l) => s + Number(l.total_kcal), 0));
+  const balance = dailyBalance({ eaten, activeKcal: health?.active_kcal ?? null, restingKcal: health?.resting_kcal ?? null });
+  await sendMessage(user.chat_id, todayMessage({ name: user.display_name, logs, target: user.calorie_target, balance }));
 }
 
 async function undo(db: SupabaseClient, user: BotUser) {
@@ -130,6 +143,10 @@ async function handleCallback(db: SupabaseClient, chatId: number, messageId: num
   if (!user) return void (await answerCallback(callbackId));
   const [action, logId, posRaw, extra] = data.split("|");
   const pos = Number(posRaw);
+
+  // habits ("h|habitId|date") and mood ("j|1-5|date") aren't tied to a meal log
+  if (action === "h") return toggleHabitCallback(db, user, chatId, messageId, callbackId, logId, posRaw);
+  if (action === "j") return moodCallback(db, user, chatId, messageId, callbackId, Number(logId), posRaw);
 
   const log = await getLog(db, user.user_id, logId);
   if (!log) return void (await answerCallback(callbackId, "This log no longer exists."));
@@ -226,7 +243,7 @@ async function applyQuantity(db: SupabaseClient, user: BotUser, item: LogItem, c
   await updateItem(db, user.user_id, item.id, { ...priced, clarify: null });
 }
 
-async function applyTypedQuantity(db: SupabaseClient, user: BotUser, action: NonNullable<BotUser["pending_action"]>, quantity: number) {
+async function applyTypedQuantity(db: SupabaseClient, user: BotUser, action: Extract<NonNullable<BotUser["pending_action"]>, { type: "edit_qty" }>, quantity: number) {
   await setPendingAction(db, user.user_id, null);
   const log = await getLog(db, user.user_id, action.log_id);
   const item = log?.items.find((i) => i.position === action.position);

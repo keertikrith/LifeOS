@@ -64,3 +64,12 @@ describe("matcher", () => {
     expect(scaleFood(rice, 2).kcal).toBe(390);
   });
 });
+
+describe("normalize keeps Indic combining marks", () => {
+  it("does not collapse different Kannada/Hindi words", async () => {
+    const { normalize } = await import("@/lib/nutrition/matcher");
+    expect(normalize("ಇಡ್ಲಿ")).toBe("ಇಡ್ಲಿ");
+    expect(normalize("ಇಡ್ಲಿ")).not.toBe(normalize("ಇಡಲ"));
+    expect(normalize("  Café-Latte!! ")).toBe("cafe latte");
+  });
+});

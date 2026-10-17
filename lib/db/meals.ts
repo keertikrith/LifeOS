@@ -44,7 +44,7 @@ export interface MealLog {
 export interface BotUser {
   user_id: string;
   chat_id: number;
-  pending_action: { type: "edit_qty"; log_id: string; position: number } | null;
+  pending_action: { type: "edit_qty"; log_id: string; position: number } | { type: "journal_note"; date: string; prompt_id: number } | null;
   timezone: string;
   calorie_target: number | null;
   display_name: string | null;

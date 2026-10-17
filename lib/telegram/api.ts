@@ -24,6 +24,17 @@ export async function sendMessage(chatId: number, text: string, keyboard?: Inlin
   return msg.message_id;
 }
 
+/** Opens Telegram's reply UI so the user's next message is explicitly a reply to this prompt. */
+export async function sendForceReply(chatId: number, text: string, placeholder: string): Promise<number> {
+  const msg = await call<{ message_id: number }>("sendMessage", {
+    chat_id: chatId,
+    text,
+    parse_mode: "HTML",
+    reply_markup: { force_reply: true, input_field_placeholder: placeholder, selective: true },
+  });
+  return msg.message_id;
+}
+
 export async function editMessage(chatId: number, messageId: number, text: string, keyboard?: InlineKeyboard) {
   try {
     await call("editMessageText", {

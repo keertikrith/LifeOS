@@ -35,7 +35,7 @@ export function normalize(s: string): string {
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .replace(/[_\-]+/g, " ")
-    .replace(/[^\p{L}\p{N} ]/gu, "")
+    .replace(/[^\p{L}\p{M}\p{N} ]/gu, "")
     .replace(/\s+/g, " ")
     .trim();
 }

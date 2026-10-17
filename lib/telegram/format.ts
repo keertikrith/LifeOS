@@ -1,4 +1,5 @@
 import type { LogItem, MealLog } from "@/lib/db/meals";
+import type { Balance } from "@/lib/health/balance";
 import { escapeHtml, type InlineKeyboard } from "./api";
 
 const MEAL_EMOJI = { breakfast: "🌅 Breakfast", lunch: "🍛 Lunch", snack: "🫖 Snack", dinner: "🌙 Dinner" } as const;
@@ -53,7 +54,7 @@ export function itemPicker(log: MealLog, action: "eq" | "ev"): InlineKeyboard {
   ];
 }
 
-export function todayMessage(args: { name: string | null; logs: MealLog[]; target: number | null }): string {
+export function todayMessage(args: { name: string | null; logs: MealLog[]; target: number | null; balance?: Balance }): string {
   const eaten = args.logs.reduce((s, l) => s + Number(l.total_kcal), 0);
   if (!args.logs.length) return "Nothing logged yet today. Tell me what you ate, like <i>“2 idli and filter coffee”</i>.";
   const rows = args.logs.map((l) => {
@@ -64,9 +65,15 @@ export function todayMessage(args: { name: string | null; logs: MealLog[]; targe
   if (args.target) {
     const diff = args.target - eaten;
     balance = diff >= 0 ? `\nTarget ${kcal(args.target)} · <b>${kcal(diff)} kcal remaining</b>` : `\nTarget ${kcal(args.target)} · <b>${kcal(-diff)} kcal above</b>`;
-  } else {
-    balance = "\n<i>Set a daily target with /target 2000 to see what's remaining. Burn data arrives with Apple Health sync.</i>";
   }
+  const b = args.balance;
+  if (b?.kind === "balance") {
+    const word = b.label === "even" ? "even" : `${kcal(Math.abs(b.balance))} kcal ${b.label}`;
+    balance += `\nBurned: ${kcal(b.burned)} kcal (resting + active) · <b>Balance: ${word}</b>`;
+  } else {
+    balance += "\n<i>No burn data for today yet — it arrives when your Apple Health sync runs.</i>";
+  }
+  if (!args.target) balance += "\n<i>Set a daily target with /target 2000 to see what's remaining.</i>";
   return `📅 <b>Today</b>\n\n${rows.join("\n\n")}\n\n<b>Eaten: ${kcal(eaten)} kcal</b>${balance}`;
 }
 
@@ -76,4 +83,6 @@ Just tell me what you ate — in English, हिन्दी, ಕನ್ನಡ or
 
 /today — eaten so far
 /undo — remove the last log
+/habits — tick off today's habits
+/journal — log your mood and a note
 /target 2000 — set your daily kcal target`;

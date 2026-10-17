@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:int": "INTEGRATION=1 vitest run tests/bot.integration.test.ts",
+    "test:int": "INTEGRATION=1 vitest run integration",
     "typecheck": "tsc --noEmit",
     "webhook": "node --env-file=.env.local scripts/set-webhook.mjs",
     "seed:gen": "NODE_NO_WARNINGS=1 node scripts/gen-seed.ts"

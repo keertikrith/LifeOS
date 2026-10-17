@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { adminClient, userClient } from "@/lib/db/clients";
+import { archiveHabit, createHabit, saveJournal, setHabitDone } from "@/lib/db/life";
 import { createLinkCode } from "@/lib/db/meals";
+import { createApiToken } from "@/lib/health/tokens";
+import { localDateString } from "@/lib/time/day";
 import { env } from "@/lib/env";
 import { isValidTimeZone } from "@/lib/time/day";
 
@@ -48,4 +51,66 @@ export async function signOut() {
   const db = await userClient();
   await db.auth.signOut();
   redirect("/");
+}
+
+// ───────────── habits ─────────────
+const validDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s));
+
+async function profileTz(db: Awaited<ReturnType<typeof userClient>>, userId: string) {
+  const { data } = await db.from("profiles").select("timezone").eq("id", userId).single();
+  return (data?.timezone as string) ?? "Asia/Kolkata";
+}
+
+export async function toggleHabit(habitId: string, date: string) {
+  const { db, user } = await requireUser();
+  if (!validDate(date)) return;
+  // no future ticks: a habit can't be done tomorrow
+  if (date > localDateString(new Date(), await profileTz(db, user.id))) return;
+  await setHabitDone(db, user.id, habitId, date);
+  revalidatePath("/app", "layout");
+}
+
+export async function addHabit(formData: FormData) {
+  const { db, user } = await requireUser();
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return;
+  const weekdays = formData.getAll("weekday").map(Number).filter((n) => Number.isInteger(n) && n >= 1 && n <= 7);
+  await createHabit(db, user.id, { name, emoji: String(formData.get("emoji") ?? "").trim() || "✅", weekdays });
+  revalidatePath("/app", "layout");
+}
+
+export async function archiveHabitAction(habitId: string) {
+  const { db, user } = await requireUser();
+  await archiveHabit(db, user.id, habitId);
+  revalidatePath("/app", "layout");
+}
+
+// ───────────── journal ─────────────
+export async function saveJournalAction(formData: FormData) {
+  const { db, user } = await requireUser();
+  const date = String(formData.get("date") ?? "");
+  if (!validDate(date) || date > localDateString(new Date(), await profileTz(db, user.id))) return;
+  const patch: { mood?: number; notes?: string } = {};
+  const moodRaw = formData.get("mood");
+  if (moodRaw) {
+    const mood = Number(moodRaw);
+    if (Number.isInteger(mood) && mood >= 1 && mood <= 5) patch.mood = mood;
+  }
+  if (formData.has("notes")) patch.notes = String(formData.get("notes") ?? "");
+  await saveJournal(db, user.id, date, patch);
+  revalidatePath("/app", "layout");
+}
+
+// ───────────── Apple Health ingest tokens ─────────────
+export async function createToken(name: string): Promise<{ token?: string; error?: string }> {
+  const { user } = await requireUser();
+  const res = await createApiToken(adminClient(), user.id, name);
+  revalidatePath("/app/health");
+  return res;
+}
+
+export async function revokeToken(tokenId: string) {
+  const { db, user } = await requireUser();
+  await db.from("api_tokens").update({ revoked_at: new Date().toISOString() }).eq("id", tokenId).eq("user_id", user.id);
+  revalidatePath("/app/health");
 }
